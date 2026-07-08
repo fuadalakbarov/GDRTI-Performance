@@ -38,7 +38,7 @@ body{font-family:'Inter',sans-serif;min-height:100vh;overflow:hidden;background:
 
 .split{
   display:grid;
-  grid-template-columns:1fr 420px;
+  grid-template-columns:1fr 480px;
   gap:60px;
   max-width:1000px;
   width:100%;
@@ -68,6 +68,7 @@ body{font-family:'Inter',sans-serif;min-height:100vh;overflow:hidden;background:
 
 /* ─── SAĞ: GİRİŞ KARTI ───────────────────────── */
 .login-card{
+  max-width:480px;
   background:rgba(255,255,255,.08);
   border:1px solid rgba(255,255,255,.15);
   border-radius:24px;padding:36px 32px;
@@ -183,12 +184,21 @@ body{font-family:'Inter',sans-serif;min-height:100vh;overflow:hidden;background:
     <!-- SAĞ: Giriş -->
     <div class="login-card">
       <div class="step active" id="step1">
-        <div style="width:100%;border-radius:14px;overflow:hidden;margin-bottom:18px;box-shadow:0 8px 24px rgba(0,0,0,.4);">
-          <video autoplay muted loop playsinline style="width:100%;height:160px;object-fit:cover;display:block;">
-            <source src="/intro-video.mp4" type="video/mp4">
-            <div style="width:100%;height:160px;background:linear-gradient(135deg,#4f46e5,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:2rem;">🎓</div>
+        <div style="width:100%;border-radius:16px;overflow:hidden;margin-bottom:22px;box-shadow:0 12px 32px rgba(0,0,0,.5);background:linear-gradient(135deg,#312e81,#4f46e5);">
+          <video autoplay loop playsinline
+            style="width:100%;height:260px;object-fit:cover;display:block;"
+            onerror="this.style.display='none'">
+            <source src="https://github.com/fuadalakbarov/GDRTI-Performance/releases/download/v1.0/intro-video.mp4" type="video/mp4">
           </video>
+          <div id="videoFallback" style="width:100%;height:260px;display:none;align-items:center;justify-content:center;flex-direction:column;gap:8px;">
+            <div style="font-size:2.5rem;">🎓</div>
+            <div style="color:rgba(255,255,255,.6);font-size:.78rem;">GDRTI Performans Sistemi</div>
+          </div>
         </div>
+        <script>
+          var v=document.querySelector(".login-card video");
+          if(v){v.addEventListener("error",function(){v.style.display="none";document.getElementById("videoFallback").style.display="flex";});}
+        </script>
         <div class="card-title">Xoş gəlmisiniz</div>
         <div class="card-sub">Gmail hesabınızla daxil olun</div>
 
