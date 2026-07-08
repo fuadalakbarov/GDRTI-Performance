@@ -2016,3 +2016,77 @@ textarea{resize:vertical;min-height:100px;}
   .stat-cards-new { grid-template-columns: repeat(2,1fr) !important; }
   .ev-row { grid-template-columns: 1fr 60px !important; }
 }
+
+/* ══ MOBİL SIDEBAR — HƏMİŞƏ AŞAĞIDA SABİT ══════════════════ */
+@media (max-width:768px){
+  /* App scroll olsun, sidebar fixed */
+  .app{
+    flex-direction:column !important;
+    height:auto !important;
+    overflow:visible !important;
+    padding-bottom:68px; /* nav hündürlüyü qədər boşluq */
+  }
+  .main{
+    flex:1 !important;
+    overflow-y:auto !important;
+    height:auto !important;
+    min-height:calc(100vh - 68px);
+  }
+
+  /* Sidebar — ekranın altına fixed */
+  .sidebar{
+    position:fixed !important;
+    bottom:0 !important; left:0 !important; right:0 !important; top:auto !important;
+    width:100% !important;
+    height:62px !important;
+    min-height:62px !important;
+    z-index:999 !important;
+    flex-direction:row !important;
+    align-items:center !important;
+    padding:0 6px !important;
+    gap:0 !important;
+    overflow-x:auto !important;
+    overflow-y:hidden !important;
+    border-radius:0 !important;
+    border-top:1px solid rgba(255,255,255,.12) !important;
+    box-shadow:0 -4px 20px rgba(20,10,80,.3) !important;
+    background:linear-gradient(90deg,#1e1b4b,#3730a3) !important;
+    scrollbar-width:none;
+  }
+  .sidebar::-webkit-scrollbar{display:none;}
+
+  /* Gizlət */
+  .sb-header,.sb-search-wrap,.sb-footer,.sb-toggle{display:none !important;}
+
+  /* Nav linklər */
+  .sb-nav{
+    flex-direction:row !important;
+    overflow-x:auto !important; overflow-y:hidden !important;
+    padding:4px 0 !important; gap:0 !important;
+    flex:1; height:100%; align-items:center;
+    scrollbar-width:none;
+  }
+  .sb-nav::-webkit-scrollbar{display:none;}
+  .sb-link{
+    flex-direction:column !important;
+    min-width:52px; flex-shrink:0;
+    padding:5px 8px !important; gap:2px !important;
+    border-radius:8px !important;
+    align-items:center !important;
+    font-size:.56rem !important;
+    color:rgba(255,255,255,.7) !important;
+    transform:none !important;
+    box-shadow:none !important;
+  }
+  .sb-link.active{background:rgba(255,255,255,.2) !important;color:#fff !important;}
+  .sb-link .sb-icon{width:18px !important;}
+  .sb-label{font-size:.54rem !important;white-space:nowrap;opacity:1 !important;width:auto !important;overflow:visible !important;}
+  .sb-link::before,.sb-active-dot,.sb-link:hover::after{display:none !important;}
+
+  /* Floating düymələr — nav üstündə görünsün */
+  #aiBubble{bottom:72px !important;}
+  .cw-bubble{bottom:72px !important;}
+  #notifPanel{top:auto;bottom:72px !important;}
+  #aiPanel{bottom:132px !important;}
+  .cw-panel{bottom:132px !important;}
+}
