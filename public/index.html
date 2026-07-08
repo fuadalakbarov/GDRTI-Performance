@@ -185,11 +185,14 @@ body{font-family:'Inter',sans-serif;min-height:100vh;overflow-y:auto;background:
     <div class="login-card">
       <div class="step active" id="step1">
         <div style="width:100%;border-radius:16px;overflow:hidden;margin-bottom:16px;box-shadow:0 12px 32px rgba(0,0,0,.5);background:linear-gradient(135deg,#312e81,#4f46e5);">
-          <video autoplay loop playsinline
-            style="width:100%;height:220px;object-fit:cover;display:block;"
-            onerror="this.style.display='none'">
-            <source src="/intro-video.mp4" type="video/mp4">
-          </video>
+          <div style="position:relative;">
+            <video id="loginVideo" autoplay muted loop playsinline
+              style="width:100%;height:220px;object-fit:cover;display:block;">
+              <source src="/intro-video.mp4" type="video/mp4">
+            </video>
+            <button onclick="toggleVid()" id="vidSoundBtn"
+              style="position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,.55);border:none;color:#fff;border-radius:50%;width:34px;height:34px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);">🔇</button>
+          </div>
           <div id="videoFallback" style="width:100%;height:220px;display:none;align-items:center;justify-content:center;flex-direction:column;gap:8px;">
             <div style="font-size:2.5rem;">🎓</div>
             <div style="color:rgba(255,255,255,.6);font-size:.78rem;">GDRTI Performans Sistemi</div>
@@ -255,6 +258,15 @@ body{font-family:'Inter',sans-serif;min-height:100vh;overflow-y:auto;background:
 })();
 </script>
 
+<script>
+function toggleVid(){
+  var v=document.getElementById('loginVideo');
+  var b=document.getElementById('vidSoundBtn');
+  if(!v)return;
+  v.muted=!v.muted;
+  b.textContent=v.muted?'🔇':'🔊';
+}
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/js/supabase-config.js"></script>
 <script src="/js/api.js"></script>
