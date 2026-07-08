@@ -1840,3 +1840,179 @@ textarea{resize:vertical;min-height:100px;}
   .feed-layout { grid-template-columns: 1fr !important; }
   .feed-left { display: none !important; }
 }
+
+/* ═══════════════════════════════════════════════════
+   MOBİL RESPONSIVE — Bütün Elementlər
+   ═══════════════════════════════════════════════════ */
+
+/* ── GİRİŞ SƏHİFƏSİ ─────────────────────────────── */
+@media (max-width: 768px) {
+  /* Login split → tek sütun */
+  .split {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+    max-width: 100% !important;
+    padding: 0 4px;
+  }
+  .hero { text-align: center; display: none; } /* mobilde hero gizlən */
+  .page { padding: 16px 12px; align-items: flex-start; padding-top: 40px; }
+  .login-card { padding: 20px 18px; max-width: 100% !important; }
+  #loginVideo, #loginVideo + button { border-radius: 12px; }
+  .hero-stats { justify-content: center; gap: 16px; }
+}
+
+/* ── APP LAYOUT ──────────────────────────────────── */
+@media (max-width: 768px) {
+  .app { flex-direction: column-reverse !important; height: 100vh; overflow: hidden; }
+  .main { flex: 1; overflow-y: auto; height: 0; padding: 14px 12px 16px !important; }
+
+  /* Topbar */
+  .topbar { flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .topbar h1 { font-size: 1.15rem !important; }
+  .topbar > div:last-child { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; }
+  .topbar .btn, .topbar button { font-size: .76rem !important; padding: 7px 11px !important; }
+
+  /* Sidebar → alt nav */
+  .sidebar {
+    position: relative !important;
+    width: 100% !important; height: 58px !important; min-height: 58px !important;
+    flex-shrink: 0 !important; flex-direction: row !important;
+    align-items: center !important; padding: 0 6px !important;
+    overflow: hidden !important; border-radius: 0 !important;
+    background: linear-gradient(90deg,#1e1b4b,#3730a3) !important;
+    box-shadow: 0 -4px 20px rgba(30,20,80,.2);
+  }
+  .sb-header, .sb-search-wrap, .sb-footer, .sb-toggle { display: none !important; }
+  .sb-nav {
+    flex-direction: row !important; overflow-x: auto; overflow-y: hidden !important;
+    padding: 4px 0 !important; gap: 0 !important; flex: 1; height: 100%;
+    align-items: center; scrollbar-width: none;
+  }
+  .sb-nav::-webkit-scrollbar { display: none; }
+  .sb-link {
+    flex-direction: column !important; min-width: 50px; flex-shrink: 0;
+    padding: 4px 8px !important; gap: 2px !important;
+    border-radius: 8px !important; align-items: center !important;
+    font-size: .55rem !important; color: rgba(255,255,255,.7) !important;
+    transform: none !important; box-shadow: none !important;
+  }
+  .sb-link.active { background: rgba(255,255,255,.18) !important; color: #fff !important; }
+  .sb-link::before, .sb-active-dot { display: none !important; }
+  .sb-label { font-size: .54rem !important; white-space: nowrap; opacity: 1 !important; width: auto !important; }
+  .sb-link:hover::after { display: none !important; }
+  .sb-icon { width: 18px !important; }
+
+  /* ── SEKTOR KARTLARI ─ */
+  .grid.sectors { grid-template-columns: 1fr !important; gap: 10px; }
+  .sc-body { padding: 13px !important; }
+  .sc-name { font-size: .88rem !important; }
+  .sc-actions { opacity: 1 !important; }
+
+  /* ── İŞÇİ KARTLARI ─ */
+  .emp-card { padding: 11px 12px !important; gap: 9px; }
+  .emp-av { width: 40px !important; height: 40px !important; }
+  .emp-btns { opacity: 1 !important; }
+
+  /* ── STAT KARTLARI ─ */
+  .stat-cards-new { grid-template-columns: repeat(2,1fr) !important; gap: 10px; }
+  .stat-cards { grid-template-columns: repeat(2,1fr) !important; }
+  .scn-n { font-size: 1.6rem !important; }
+  .stat-card .num { font-size: 1.4rem !important; }
+
+  /* ── TAPŞIRIQ KARTLARI ─ */
+  .task-card { padding: 12px !important; }
+  .task-card-footer { flex-direction: column; gap: 8px; }
+  .status-select { width: 100%; }
+
+  /* ── MODAL ─ */
+  .modal-bg { padding: 0 !important; align-items: flex-end !important; }
+  .modal {
+    border-radius: 20px 20px 0 0 !important; max-height: 88vh;
+    overflow-y: auto; padding: 22px 18px !important;
+    animation: sheet-up .3s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes sheet-up { from{transform:translateY(100%)} to{transform:translateY(0)} }
+  .modal h3 { font-size: 1rem !important; }
+  .field input, .field select, .field textarea { font-size: 16px !important; } /* zoom-u önlə */
+
+  /* ── KANBAN ─ */
+  .kb-board { flex-direction: column !important; }
+  .kb-col { min-width: unset !important; width: 100% !important; }
+  .kb-filter { flex-direction: column; gap: 6px; }
+
+  /* ── ANALİTİKA ─ */
+  .charts-grid { grid-template-columns: 1fr !important; }
+  .big-stats { grid-template-columns: repeat(2,1fr) !important; }
+  .cw { height: 200px !important; }
+
+  /* ── LIDERBOARD ─ */
+  .lb-bw { display: none !important; }
+  .lb-row { padding: 10px 12px !important; gap: 8px; }
+  .podium { gap: 6px !important; }
+
+  /* ── KALENdAR ─ */
+  .cal-grid, .cal-header { gap: 2px !important; }
+  .cal-day { min-height: 44px !important; font-size: .62rem !important; padding: 3px !important; }
+  .cal-header div { font-size: .58rem !important; }
+  .cal-event { font-size: .58rem !important; padding: 1px 4px !important; }
+
+  /* ── MƏKTUBLAR ─ */
+  .mail-layout { grid-template-columns: 1fr !important; height: auto !important; }
+  .mail-sidebar { height: 150px; overflow-y: auto; border-right: none; border-bottom: 1px solid var(--border); }
+  .compose-overlay { width: calc(100vw - 12px) !important; right: 6px !important; left: 6px !important; bottom: 68px !important; }
+
+  /* ── WORKSPACE ─ */
+  .doc-grid { grid-template-columns: 1fr !important; }
+  .gq-wrap { gap: 6px; flex-wrap: wrap; }
+  .gq-btn { font-size: .76rem !important; padding: 8px 10px !important; }
+
+  /* ── QİYMƏTLƏNDİRMƏ ─ */
+  .ev-wrap { grid-template-columns: 1fr !important; }
+  .ev-list-panel { max-height: 200px; overflow-y: auto; }
+  .ev-row { grid-template-columns: 1fr 70px 100px !important; }
+
+  /* ── HƏDƏFLƏR ─ */
+  .goal-grid { grid-template-columns: 1fr !important; }
+
+  /* ── İŞ LENTİ ─ */
+  .feed-layout { grid-template-columns: 1fr !important; padding: 10px 10px 20px !important; }
+  .feed-left, .feed-right { display: none !important; }
+  .feed-center { width: 100%; }
+  .story-bar { padding: 10px 12px !important; gap: 8px !important; }
+  .story-av-wrap { width: 46px !important; height: 46px !important; }
+  .story-name { font-size: .62rem !important; }
+  .post-type-btns .ptb { font-size: .74rem !important; padding: 6px !important; }
+  .post-input { font-size: 16px !important; } /* iOS zoom önlə */
+
+  /* ── FLOATING BUTTONS ─ */
+  #aiBubble { bottom: 68px !important; right: 10px !important; width: 42px !important; height: 42px !important; }
+  .cw-bubble { bottom: 68px !important; right: 58px !important; width: 46px !important; height: 46px !important; }
+  #aiPanel { width: calc(100vw - 14px) !important; right: 7px !important; bottom: 120px !important; height: 380px !important; }
+  .cw-panel { width: calc(100vw - 14px) !important; right: 7px !important; }
+  #notifPanel { width: calc(100vw - 14px) !important; right: 7px !important; top: 50px !important; left: 7px !important; }
+
+  /* ── PROFIL ─ */
+  .profile-card { padding: 18px 14px !important; }
+
+  /* ── GÖRÜŞ PROTOKOLU ─ */
+  .mn-card { padding: 14px !important; }
+
+  /* ── SORĞULAR ─ */
+  .sv-card { padding: 14px !important; }
+  .otp-wrap { gap: 5px !important; }
+  .otp-box { width: 36px !important; height: 44px !important; font-size: 1.1rem !important; }
+
+  /* ── EMPLOYEE DETAIL ─ */
+  .ed-header { flex-direction: column; align-items: center; text-align: center; }
+  .ed-tabs { overflow-x: auto; }
+}
+
+/* ── KİÇİK TELEFON ≤400px ─────────────────────────── */
+@media (max-width: 400px) {
+  .sb-label { display: none !important; }
+  .sb-link { min-width: 44px !important; padding: 6px !important; }
+  .scn-n { font-size: 1.4rem !important; }
+  .topbar h1 { font-size: 1rem !important; }
+  .stat-cards-new { grid-template-columns: repeat(2,1fr) !important; }
+  .ev-row { grid-template-columns: 1fr 60px !important; }
+}

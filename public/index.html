@@ -125,6 +125,21 @@ body{font-family:'Inter',sans-serif;min-height:100vh;overflow-y:auto;background:
 .card-footer{text-align:center;margin-top:20px;font-size:.72rem;color:rgba(255,255,255,.3);}
 
 /* ─── MOBİL ─────────────────────────────────── */
+
+@media(max-width:768px){
+  body{overflow-y:auto;}
+  .page{padding:24px 14px;align-items:flex-start;min-height:100svh;}
+  .split{grid-template-columns:1fr!important;gap:0!important;}
+  .hero{display:none!important;}
+  .login-card{padding:18px 16px!important;border-radius:18px!important;}
+  .login-card video{height:180px!important;}
+  .card-title{font-size:1.15rem!important;}
+  .google-btn{padding:13px!important;}
+  .features{gap:8px!important;}
+  .feat{font-size:.8rem!important;}
+  .card-footer{font-size:.68rem!important;}
+}
+
 @media(max-width:720px){
   .split{grid-template-columns:1fr;gap:30px;max-width:440px;}
   .hero{text-align:center;}
