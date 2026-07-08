@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kanban — GDRTI Performans</title>
+<link rel="stylesheet" href="/css/style.css">
+<style>
+.kb-board{display:flex;gap:14px;overflow-x:auto;padding-bottom:20px;min-height:calc(100vh - 200px);}
+.kb-col{background:#f5f5fb;border-radius:14px;padding:12px;min-width:250px;width:250px;flex-shrink:0;border:2px solid transparent;transition:.2s;}
+.kb-col.drag-over{border-color:var(--indigo);background:#ede9ff;}
+.kb-col-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:0 2px;}
+.kb-col-title{font-weight:700;font-size:.85rem;display:flex;align-items:center;gap:6px;}
+.kb-count{background:#fff;border:1px solid var(--border);border-radius:10px;padding:1px 8px;font-size:.72rem;color:var(--text-dim);font-weight:600;}
+.kb-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;cursor:grab;transition:.15s;box-shadow:0 2px 8px rgba(0,0,0,.05);}
+.kb-card:hover{border-color:var(--indigo);box-shadow:0 4px 14px rgba(99,102,241,.12);}
+.kb-card.dragging{opacity:.35;cursor:grabbing;}
+.kb-card-title{font-size:.85rem;font-weight:600;color:var(--text);margin-bottom:5px;line-height:1.3;}
+.kb-card-emp{display:flex;align-items:center;gap:6px;font-size:.74rem;color:var(--text-dim);margin-bottom:5px;}
+.kb-av{width:18px;height:18px;border-radius:50%;background:var(--grad);color:#fff;font-size:.52rem;font-weight:700;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;}
+.kb-card-foot{display:flex;justify-content:space-between;align-items:center;}
+.kb-due{font-size:.69rem;color:var(--text-mute);}
+.kb-due.overdue{color:var(--red);font-weight:700;}
+.kb-due.today{color:var(--amber);font-weight:700;}
+.pb{padding:2px 7px;border-radius:20px;font-size:.66rem;font-weight:700;}
+.pb-high{background:#fde8e8;color:#c53030;}
+.pb-medium{background:#fef3e2;color:#b7791f;}
+.pb-low{background:#e3f9ec;color:#15803d;}
+.kb-filter{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.kb-filter select{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:7px 12px;font-size:.83rem;color:var(--text);outline:none;font-family:inherit;}
+.kb-loading{color:var(--text-mute);font-size:.88rem;padding:30px;text-align:center;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar"></div>
+  <div class="main">
+    <div class="topbar">
+      <div><h1>📋 Kanban</h1><div class="subtitle">Tapşırıqları sürükle-burax ilə idarə edin</div></div>
+      <button class="btn small" id="addBtn" style="display:none;" onclick="showAddTask()">+ Tapşırıq</button>
+    </div>
+    <div class="kb-filter">
+      <select id="fSector" onchange="applyFilter()"><option value="">Bütün sektorlar</option></select>
+      <select id="fEmp" onchange="applyFilter()"><option value="">Bütün işçilər</option></select>
+      <select id="fPrio" onchange="applyFilter()">
+        <option value="">Bütün prioritetlər</option>
+        <option value="high">🔴 Yüksək</option>
+        <option value="medium">🟡 Orta</option>
+        <option value="low">🟢 Aşağı</option>
+      </select>
+    </div>
+    <div class="kb-board" id="board"><div class="kb-loading">Yüklənir...</div></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="addModal" style="display:none;">
+  <div class="modal">
+    <h3>+ Yeni tapşırıq</h3>
+    <form id="addForm">
+      <div class="field"><label>İşçi</label><select id="tEmp" required></select></div>
+      <div class="field"><label>Başlıq</label><input type="text" id="tTitle" required></div>
+      <div class="field"><label>Təsvir</label><textarea id="tDesc" rows="2"></textarea></div>
+      <div class="field"><label>Son tarix</label><input type="date" id="tDue"></div>
+      <div class="field"><label>Prioritet</label>
+        <select id="tPrio">
+          <option value="medium">🟡 Orta</option>
+          <option value="high">🔴 Yüksək</option>
+          <option value="low">🟢 Aşağı</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn secondary" onclick="closeAdd()">Ləğv et</button>
+        <button type="submit" class="btn">Əlavə et</button>
+      </div>
+      <div class="error-msg" id="tErr"></div>
+    </form>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/sidebar.js"></script>
+<script>
+const user = requireAuth();
+if (['admin','director','deputy'].includes(user.role)) document.getElementById('addBtn').style.display = 'inline-flex';
+
+const COLS = [
+  { id:'pending',     label:'⏳ Gözləyir',   color:'#f59e0b' },
+  { id:'in_progress', label:'🔵 İcrada',      color:'#3b82f6' },
+  { id:'completed',   label:'✅ Tamamlandı',  color:'#22c55e' },
+  { id:'overdue',     label:'🔴 Gecikib',     color:'#ef4444' },
+];
+const PC = { high:'pb-high', medium:'pb-medium', low:'pb-low' };
+const PL = { high:'🔴 Yüksək', medium:'🟡 Orta', low:'🟢 Aşağı' };
+
+let rawTasks = [], sectors = [], contacts = [];
+
+async function init(){
+  try { sectors = await apiCall('/sectors'); } catch(e){}
+  try { contacts = await apiCall('/employees/contacts'); } catch(e){}
+
+  // Filtrləri doldur
+  const fS = document.getElementById('fSector');
+  sectors.forEach(s => fS.innerHTML += `<option value="${s.id}">${s.name}</option>`);
+  const fE = document.getElementById('fEmp');
+  contacts.forEach(e => fE.innerHTML += `<option value="${e.id}">${e.full_name}</option>`);
+  const tE = document.getElementById('tEmp');
+  contacts.forEach(e => tE.innerHTML += `<option value="${e.id}">${e.full_name}</option>`);
+
+  await loadTasks();
+}
+
+async function loadTasks(){
+  document.getElementById('board').innerHTML = '<div class="kb-loading">Yüklənir...</div>';
+  try {
+    if (['admin','director','deputy'].includes(user.role)) {
+      rawTasks = await apiCall('/admin/tasks');
+    } else {
+      const mine = await apiCall('/tasks/mine');
+      rawTasks = mine.map(t => ({ ...t, employees: user }));
+    }
+  } catch(e) {
+    rawTasks = [];
+    document.getElementById('board').innerHTML = `
+      <div style="padding:24px;background:#fde8e8;border-radius:12px;color:#c53030;border:1px solid #f5a0a0;">
+        ❌ Tapşırıqlar yüklənmədi: <b>${e.message}</b><br>
+        <small>Render deploy tamamlanmayıbsa bir neçə dəqiqə gözləyib yenidən yükləyin.</small>
+      </div>`;
+    return;
+  }
+  applyFilter();
+}
+
+function applyFilter(){
+  const fS = document.getElementById('fSector').value;
+  const fE = document.getElementById('fEmp').value;
+  const fP = document.getElementById('fPrio').value;
+
+  let tasks = rawTasks.filter(t => {
+    if (fE && t.employee_id !== fE) return false;
+    if (fP && (t.priority||'medium') !== fP) return false;
+    if (fS && t.employees?.sector_id !== fS) return false;
+    return true;
+  });
+  renderBoard(tasks);
+}
+
+function renderBoard(tasks){
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('board').innerHTML = COLS.map(col => {
+    const ct = tasks.filter(t => t.status === col.id);
+    return `<div class="kb-col" data-status="${col.id}"
+      ondragover="event.preventDefault();this.classList.add('drag-over')"
+      ondragleave="this.classList.remove('drag-over')"
+      ondrop="onDrop(event,'${col.id}')">
+      <div class="kb-col-head">
+        <div class="kb-col-title">
+          <span style="width:9px;height:9px;border-radius:50%;background:${col.color};display:inline-block;"></span>
+          ${col.label}
+        </div>
+        <span class="kb-count">${ct.length}</span>
+      </div>
+      ${ct.map(t => cardHtml(t, today)).join('')}
+    </div>`;
+  }).join('');
+
+  document.querySelectorAll('.kb-card').forEach(c => {
+    c.ondragstart = e => { e.dataTransfer.setData('tid', c.dataset.id); c.classList.add('dragging'); };
+    c.ondragend = () => c.classList.remove('dragging');
+  });
+}
+
+function cardHtml(t, today){
+  const prio = t.priority || 'medium';
+  const emp = t.employees;
+  let dueClass = 'kb-due', dueLabel = t.due_date||'';
+  if (t.due_date && t.status !== 'completed' && t.status !== 'cancelled') {
+    if (t.due_date < today) { dueClass += ' overdue'; dueLabel = '⚠️ '+dueLabel; }
+    else if (t.due_date === today) { dueClass += ' today'; dueLabel = '⏰ Bu gün'; }
+  }
+  return `<div class="kb-card" draggable="true" data-id="${t.id}">
+    <div class="kb-card-title">${t.title}</div>
+    <div class="kb-card-emp">
+      <div class="kb-av">${emp?.photo_url?`<img src="${emp.photo_url}" style="width:100%;height:100%;object-fit:cover;">`:initials(emp?.full_name||'?')}</div>
+      ${emp?.full_name||''}
+    </div>
+    <div class="kb-card-foot">
+      <span class="${dueClass}">${dueLabel}</span>
+      <span class="pb ${PC[prio]}">${PL[prio]}</span>
+    </div>
+  </div>`;
+}
+
+async function onDrop(e, newStatus){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const tid = e.dataTransfer.getData('tid');
+  if (!tid) return;
+  const t = rawTasks.find(x => x.id === tid);
+  if (!t || t.status === newStatus) return;
+  try {
+    await apiCall(`/tasks/${tid}/status`, 'PATCH', { status: newStatus });
+    t.status = newStatus;
+    applyFilter();
+  } catch(err) { alert(err.message); }
+}
+
+function showAddTask(){ document.getElementById('addModal').style.display='flex'; }
+function closeAdd(){ document.getElementById('addModal').style.display='none'; document.getElementById('addForm').reset(); }
+
+document.getElementById('addForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const errEl = document.getElementById('tErr'); errEl.textContent='';
+  try {
+    const t = await apiCall('/tasks','POST',{
+      employee_id: document.getElementById('tEmp').value,
+      title: document.getElementById('tTitle').value,
+      description: document.getElementById('tDesc').value,
+      due_date: document.getElementById('tDue').value||null,
+      priority: document.getElementById('tPrio').value
+    });
+    closeAdd();
+    await loadTasks();
+  } catch(err){ errEl.textContent=err.message; }
+});
+
+init();
+</script>
+<script src="/js/chat-widget.js"></script>
+<script src="/js/animate.js"></script>
+</body>
+</html>

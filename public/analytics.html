@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analitika — GDRTI Performans</title>
+<link rel="stylesheet" href="/css/style.css">
+<style>
+.charts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:18px;}
+.cc{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);}
+.cc h3{font-size:.9rem;font-weight:700;margin-bottom:14px;color:var(--text);}
+.cw{position:relative;height:230px;}
+.big-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:20px;}
+.bstat{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:var(--shadow);text-align:center;}
+.bstat .n{font-size:1.9rem;font-weight:800;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.bstat .l{font-size:.78rem;color:var(--text-dim);margin-top:3px;}
+.tr{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
+.tr:last-child{border:none;}
+.tr .rn{font-size:1rem;min-width:28px;text-align:center;font-weight:800;}
+.tr .rn.g{color:#f59e0b;} .tr .rn.s{color:#9ca3af;} .tr .rn.b{color:#b45309;}
+.tr .ta{width:36px;height:36px;border-radius:50%;background:var(--grad);color:#fff;font-size:.72rem;font-weight:700;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;}
+.tr .ti{flex:1;}
+.tr .ti .tn{font-weight:600;font-size:.88rem;}
+.tr .ti .tm{font-size:.74rem;color:var(--text-dim);}
+.tr .bw{width:90px;}
+.tr .bb{height:8px;border-radius:4px;background:var(--grad);}
+.tr .sc{font-weight:800;font-size:.9rem;color:var(--indigo);min-width:42px;text-align:right;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar"></div>
+  <div class="main">
+    <div class="topbar"><div><h1>📈 Analitika</h1><div class="subtitle">Sistem statistikası</div></div></div>
+    <div class="big-stats" id="bigStats"></div>
+    <div class="charts-grid">
+      <div class="cc"><h3>📊 Sektor performansı (orta bal)</h3><div class="cw"><canvas id="cSector"></canvas></div></div>
+      <div class="cc"><h3>🥧 Tapşırıq statusları</h3><div class="cw"><canvas id="cStatus"></canvas></div></div>
+      <div class="cc"><h3>⚡ Prioritet paylanması</h3><div class="cw"><canvas id="cPrio"></canvas></div></div>
+      <div class="cc"><h3>📋 Sektora görə tapşırıq sayı</h3><div class="cw"><canvas id="cSectorTask"></canvas></div></div>
+      <div class="cc" style="grid-column:1/-1;"><h3>🏆 Ən yüksək ballı 10 işçi</h3><div id="topList"></div></div>
+    </div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/sidebar.js"></script>
+<script>
+const user = requireAuth();
+const CLR = ['#6366f1','#8b5cf6','#3b82f6','#06b6d4','#22c55e','#f59e0b','#ec4899','#ef4444'];
+
+async function load(){
+  // Yalnız 2 API çağırışı
+  const [empStats, allTasks] = await Promise.all([
+    user.role==='admin' ? apiCall('/admin/employee-stats') : Promise.resolve([]),
+    user.role==='admin' ? apiCall('/admin/tasks') : apiCall('/tasks/mine').then(t=>t.map(x=>({...x,employees:user})))
+  ]);
+
+  // Sektorlar üzrə qruplaşdır
+  const sectorMap = {};
+  empStats.forEach(e => {
+    const sn = e.sectors?.name || 'Sektorsuz';
+    if (!sectorMap[sn]) sectorMap[sn] = { emps:[], tasks:0, totalPoints:0 };
+    sectorMap[sn].emps.push(e);
+    sectorMap[sn].totalPoints += e.stats.points;
+  });
+  allTasks.forEach(t => {
+    const sn = t.employees?.sectors?.name || 'Sektorsuz';
+    if (sectorMap[sn]) sectorMap[sn].tasks++;
+  });
+
+  const statusMap = { pending:0, in_progress:0, completed:0, overdue:0, cancelled:0 };
+  const prioMap = { high:0, medium:0, low:0 };
+  let totalCompleted = 0;
+  allTasks.forEach(t => {
+    statusMap[t.status] = (statusMap[t.status]||0) + 1;
+    prioMap[t.priority||'medium']++;
+    if (t.status==='completed') totalCompleted++;
+  });
+
+  const totalEmps = empStats.length, totalTasks = allTasks.length;
+  const totalPts = empStats.reduce((s,e)=>s+e.stats.points,0);
+
+  // Böyük statistikalar
+  document.getElementById('bigStats').innerHTML = [
+    { n: totalEmps, l: '👥 Cəmi işçi' },
+    { n: totalTasks, l: '📋 Cəmi tapşırıq' },
+    { n: totalTasks ? Math.round(totalCompleted/totalTasks*100)+'%' : '0%', l: '✅ Tamamlama faizi' },
+    { n: totalEmps ? Math.round(totalPts/totalEmps) : 0, l: '⭐ Orta bal' },
+  ].map(s=>`<div class="bstat"><div class="n">${s.n}</div><div class="l">${s.l}</div></div>`).join('');
+
+  const sKeys = Object.keys(sectorMap);
+  const sLabels = sKeys.map(k => k.length>18 ? k.slice(0,18)+'…' : k);
+  const sScores = sKeys.map(k => sectorMap[k].emps.length ? Math.round(sectorMap[k].totalPoints/sectorMap[k].emps.length) : 0);
+  const sTasks  = sKeys.map(k => sectorMap[k].tasks);
+
+  const opts = { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}} };
+
+  new Chart(document.getElementById('cSector'), { type:'bar', data:{ labels:sLabels, datasets:[{ label:'Orta bal', data:sScores, backgroundColor:CLR, borderRadius:7, borderSkipped:false }]}, options:opts });
+  new Chart(document.getElementById('cStatus'), { type:'doughnut', data:{ labels:['Gözləyir','İcrada','Tamamlandı','Gecikib','Ləğv edilib'], datasets:[{ data:[statusMap.pending,statusMap.in_progress,statusMap.completed,statusMap.overdue,statusMap.cancelled], backgroundColor:['#f59e0b','#3b82f6','#22c55e','#ef4444','#9ca3af'], borderWidth:0, hoverOffset:6 }]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right'}}}});
+  new Chart(document.getElementById('cPrio'), { type:'doughnut', data:{ labels:['Yüksək','Orta','Aşağı'], datasets:[{ data:[prioMap.high,prioMap.medium,prioMap.low], backgroundColor:['#ef4444','#f59e0b','#22c55e'], borderWidth:0, hoverOffset:6 }]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right'}}}});
+  new Chart(document.getElementById('cSectorTask'), { type:'bar', data:{ labels:sLabels, datasets:[{ label:'Tapşırıq', data:sTasks, backgroundColor:CLR.map(c=>c+'99'), borderColor:CLR, borderWidth:2, borderRadius:7 }]}, options:opts });
+
+  // Top 10
+  const top10 = [...empStats].sort((a,b)=>b.stats.points-a.stats.points).slice(0,10);
+  const maxPts = top10[0]?.stats.points || 1;
+  const medals = ['🥇','🥈','🥉'];
+  document.getElementById('topList').innerHTML = top10.map((e,i)=>`
+    <div class="tr">
+      <div class="rn ${i===0?'g':i===1?'s':i===2?'b':''}">${medals[i]||i+1}</div>
+      <div class="ta">${e.photo_url?`<img src="${e.photo_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`:initials(e.full_name)}</div>
+      <div class="ti"><div class="tn">${e.full_name}</div><div class="tm">${e.position||''} · ${e.sectors?.name||''}</div></div>
+      <div class="bw"><div class="bb" style="width:${Math.round(e.stats.points/maxPts*100)}%"></div></div>
+      <div class="sc">${e.stats.points}</div>
+    </div>`).join('') || '<div style="color:var(--text-mute);font-size:.85rem;padding:12px 0;">Məlumat yoxdur</div>';
+}
+
+load().catch(e => {
+  document.querySelector('.main').innerHTML += `
+    <div style="background:#fde8e8;border:1px solid #f5a0a0;border-radius:12px;padding:16px;color:#c53030;margin-top:16px;">
+      ❌ Məlumat yüklənmədi: <b>${e.message}</b><br>
+      <small>Render deploy tamamlandıqdan sonra yenidən cəhd edin. Konsola baxın (F12) ətraflı məlumat üçün.</small>
+    </div>`;
+  console.error('Analytics xəta:', e);
+});
+</script>
+<script src="/js/chat-widget.js"></script>
+<script src="/js/animate.js"></script>
+</body>
+</html>

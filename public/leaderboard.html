@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Liderboard — GDRTI Performans</title>
+<link rel="stylesheet" href="/css/style.css">
+<style>
+.podium{display:flex;justify-content:center;align-items:flex-end;gap:14px;margin:0 auto 28px;max-width:420px;}
+.pod{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.pod-av{border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--grad);color:#fff;font-weight:700;}
+.pod-av img{width:100%;height:100%;object-fit:cover;}
+.pod-name{font-weight:700;font-size:.82rem;text-align:center;max-width:90px;word-break:break-word;}
+.pod-pts{font-size:.74rem;color:var(--text-dim);}
+.pod-base{border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:1.1rem;}
+.lb-list{display:flex;flex-direction:column;gap:8px;max-width:700px;}
+.lb-row{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow);transition:.2s;}
+.lb-row.me{border-color:var(--indigo);background:#f5f3ff;}
+.lb-row:hover{border-color:var(--indigo);}
+.lb-num{font-weight:800;font-size:1rem;color:var(--text-mute);min-width:26px;text-align:center;}
+.lb-av{width:42px;height:42px;border-radius:50%;background:var(--grad);color:#fff;font-size:.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;}
+.lb-info{flex:1;}
+.lb-name{font-weight:700;font-size:.9rem;}
+.lb-meta{font-size:.74rem;color:var(--text-dim);}
+.lb-bw{width:120px;}
+.lb-bar{height:9px;border-radius:4px;background:var(--grad);}
+.lb-sc{font-weight:800;font-size:1rem;color:var(--indigo);min-width:48px;text-align:right;}
+.my-rank{text-align:center;margin-bottom:20px;font-size:.88rem;color:var(--text-dim);}
+.my-rank b{color:var(--indigo);font-size:1rem;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar"></div>
+  <div class="main">
+    <div class="topbar"><div><h1>🏆 Liderboard</h1><div class="subtitle">Ən yüksək performanslı işçilər</div></div></div>
+    <div id="content"><div class="empty-state">Yüklənir...</div></div>
+  </div>
+</div>
+<script src="/js/api.js"></script>
+<script src="/js/sidebar.js"></script>
+<script>
+const user = requireAuth();
+
+async function load(){
+  let empStats;
+  try {
+    empStats = user.role==='admin'
+      ? await apiCall('/admin/employee-stats')
+      : await apiCall('/sectors').then(async sectors => {
+          const all = [];
+          for (const s of sectors) {
+            const emps = await apiCall(`/sectors/${s.id}/employees`);
+            emps.forEach(e => all.push({ ...e, sectors: { name: s.name } }));
+          }
+          return all;
+        });
+  } catch(e) { empStats = []; }
+
+  empStats.sort((a,b) => b.stats.points - a.stats.points);
+  const maxPts = empStats[0]?.stats.points || 1;
+  const myRank = empStats.findIndex(e => e.id === user.id) + 1;
+
+  const av = (e, size) => {
+    const s = size||40;
+    return `<div style="width:${s}px;height:${s}px;border-radius:50%;background:var(--grad);color:#fff;font-size:${Math.round(s*0.22)}px;font-weight:700;display:flex;align-items:center;justify-content:center;overflow:hidden;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.15);">
+      ${e.photo_url?`<img src="${e.photo_url}" style="width:100%;height:100%;object-fit:cover;">`:initials(e.full_name)}
+    </div>`;
+  };
+
+  const [p1,p2,p3] = [empStats[0],empStats[1],empStats[2]];
+  const pod = (e,medal,size,baseH,baseColor) => e ? `
+    <div class="pod">
+      <div style="font-size:1.4rem;">${medal}</div>
+      ${av(e,size)}
+      <div class="pod-name">${e.full_name}</div>
+      <div class="pod-pts">${e.stats.points} bal</div>
+      <div class="pod-base" style="width:${size+20}px;height:${baseH}px;background:${baseColor};">${medal}</div>
+    </div>` : '';
+
+  const rest = empStats.slice(3);
+
+  document.getElementById('content').innerHTML = `
+    ${myRank>0 ? `<div class="my-rank">Sizin yeriniz: <b>#${myRank}</b> / ${empStats.length} işçidən</div>` : ''}
+    <div class="podium">
+      ${pod(p2,'🥈',64,80,'#9ca3af')}
+      ${pod(p1,'🥇',80,110,'#f59e0b')}
+      ${pod(p3,'🥉',56,60,'#b45309')}
+    </div>
+    <div class="lb-list">
+      ${rest.map((e,i) => `
+        <div class="lb-row ${e.id===user.id?'me':''}">
+          <div class="lb-num">${i+4}</div>
+          <div class="lb-av">${e.photo_url?`<img src="${e.photo_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`:initials(e.full_name)}</div>
+          <div class="lb-info">
+            <div class="lb-name">${e.full_name} ${e.id===user.id?'<span style="color:var(--indigo);font-size:.7rem;">(siz)</span>':''}</div>
+            <div class="lb-meta">${e.position||''} ${e.sectors?.name?'· '+e.sectors.name:''} · ${e.stats.completionRate}% tamamlama</div>
+          </div>
+          <div class="lb-bw"><div class="lb-bar" style="width:${Math.round(e.stats.points/maxPts*100)}%"></div></div>
+          <div class="lb-sc">${e.stats.points}</div>
+        </div>`).join('')}
+    </div>`;
+}
+
+load().catch(() => { document.getElementById('content').innerHTML = '<div class="empty-state">Məlumat yükləmə xətası</div>'; });
+</script>
+<script src="/js/chat-widget.js"></script>
+<script src="/js/animate.js"></script>
+</body>
+</html>

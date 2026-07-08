@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GDRTI Performans Sistemi — Giriş</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',sans-serif;min-height:100vh;overflow:hidden;background:#0f0e1a;}
+
+/* ─── ARXA PLAN VİDEO ─────────────────────────── */
+.bg-video-wrap{position:fixed;inset:0;z-index:0;}
+.bg-animated{
+  position:absolute;inset:0;
+  background:linear-gradient(135deg,#0f0e1a 0%,#1e1b4b 25%,#312e81 50%,#1e1b4b 75%,#0f0e1a 100%);
+  background-size:400% 400%;
+  animation:gradShift 12s ease infinite;
+}
+@keyframes gradShift{
+  0%{background-position:0% 50%;}
+  50%{background-position:100% 50%;}
+  100%{background-position:0% 50%;}
+}
+.bg-overlay{
+  position:absolute;inset:0;
+  background:linear-gradient(
+    135deg,
+    rgba(15,14,26,.88) 0%,
+    rgba(30,27,75,.82) 40%,
+    rgba(79,70,229,.35) 80%,
+    rgba(15,14,26,.92) 100%
+  );
+}
+
+/* ─── ƏSAS LAYOUT ──────────────────────────────── */
+.page{position:relative;z-index:10;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+
+.split{
+  display:grid;
+  grid-template-columns:1fr 420px;
+  gap:60px;
+  max-width:1000px;
+  width:100%;
+  align-items:center;
+}
+
+/* ─── SOL: MƏTİN ──────────────────────────────── */
+.hero{color:#fff;}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
+  border-radius:20px;padding:5px 14px;font-size:.76rem;font-weight:600;
+  color:rgba(255,255,255,.85);margin-bottom:22px;letter-spacing:.04em;
+  backdrop-filter:blur(8px);
+}
+.hero h1{
+  font-size:2.6rem;font-weight:900;line-height:1.15;
+  letter-spacing:-.03em;margin-bottom:14px;
+  background:linear-gradient(135deg,#fff 0%,rgba(165,180,252,.9) 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.hero p{font-size:1rem;color:rgba(255,255,255,.6);line-height:1.6;margin-bottom:28px;}
+.hero-stats{display:flex;gap:24px;flex-wrap:wrap;}
+.hs{text-align:center;}
+.hs-n{font-size:1.6rem;font-weight:900;color:#a5b4fc;}
+.hs-l{font-size:.72rem;color:rgba(255,255,255,.5);margin-top:2px;font-weight:500;}
+
+/* ─── SAĞ: GİRİŞ KARTI ───────────────────────── */
+.login-card{
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.15);
+  border-radius:24px;padding:36px 32px;
+  backdrop-filter:blur(24px);
+  box-shadow:0 32px 80px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.12);
+  animation:card-in .6s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes card-in{
+  from{opacity:0;transform:translateY(30px) scale(.95);}
+  to{opacity:1;transform:translateY(0) scale(1);}
+}
+
+/* Logo */
+.card-logo{
+  width:56px;height:56px;border-radius:16px;
+  background:linear-gradient(135deg,#6366f1,#7c3aed);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.5rem;margin:0 auto 20px;
+  box-shadow:0 8px 24px rgba(99,102,241,.4);
+}
+.card-title{font-size:1.35rem;font-weight:800;color:#fff;text-align:center;margin-bottom:6px;letter-spacing:-.02em;}
+.card-sub{font-size:.84rem;color:rgba(255,255,255,.5);text-align:center;margin-bottom:28px;line-height:1.5;}
+
+/* Google düyməsi */
+.google-btn{
+  display:flex;align-items:center;justify-content:center;gap:12px;
+  width:100%;padding:14px;border:1px solid rgba(255,255,255,.2);
+  border-radius:14px;background:rgba(255,255,255,.95);cursor:pointer;
+  font-size:.92rem;font-weight:700;color:#1a1a2e;transition:.2s;
+  font-family:'Inter',sans-serif;
+  box-shadow:0 4px 16px rgba(0,0,0,.3);
+}
+.google-btn:hover{background:#fff;transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.35);}
+.google-btn:active{transform:translateY(0);}
+
+/* Ayırıcı */
+.divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:rgba(255,255,255,.3);font-size:.78rem;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.1);}
+
+/* Xüsusiyyətlər */
+.features{display:flex;flex-direction:column;gap:10px;}
+.feat{display:flex;align-items:center;gap:10px;font-size:.82rem;color:rgba(255,255,255,.65);}
+.feat-icon{width:28px;height:28px;border-radius:8px;background:rgba(99,102,241,.25);display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0;}
+
+/* Xəta */
+.err{color:#fca5a5;font-size:.8rem;text-align:center;margin-top:12px;min-height:18px;}
+
+/* Yüklənir */
+.loading-wrap{text-align:center;padding:20px 0;}
+.spin{width:36px;height:36px;border:3px solid rgba(255,255,255,.15);border-top-color:#a5b4fc;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* Footer */
+.card-footer{text-align:center;margin-top:20px;font-size:.72rem;color:rgba(255,255,255,.3);}
+
+/* ─── MOBİL ─────────────────────────────────── */
+@media(max-width:720px){
+  .split{grid-template-columns:1fr;gap:30px;max-width:440px;}
+  .hero{text-align:center;}
+  .hero h1{font-size:1.8rem;}
+  .hero-stats{justify-content:center;}
+  body{overflow-y:auto;}
+}
+
+/* Floatinq hissəciklər */
+.particles{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden;}
+.particle{
+  position:absolute;border-radius:50%;
+  background:radial-gradient(circle,rgba(99,102,241,.6),transparent);
+  animation:float linear infinite;
+}
+@keyframes float{
+  0%{transform:translateY(100vh) scale(0);opacity:0;}
+  10%{opacity:.6;}
+  90%{opacity:.2;}
+  100%{transform:translateY(-20px) scale(1);opacity:0;}
+}
+
+.step{display:none;} .step.active{display:block;}
+</style>
+</head>
+<body>
+
+<!-- Arxa plan — animated gradient -->
+<div class="bg-video-wrap">
+  <div class="bg-animated"></div>
+  <div class="bg-overlay"></div>
+</div>
+
+<!-- Hissəciklər -->
+<div class="particles" id="particles"></div>
+
+<!-- Əsas məzmun -->
+<div class="page">
+  <div class="split">
+
+    <!-- SOL: Hero mətn -->
+    <div class="hero">
+      <div class="hero-badge">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        Rəsmi Sistem
+      </div>
+      <h1>GDRTI Performans İdarəetmə</h1>
+      <p>Gəncə-Daşkəsən Regional Təhsil İdarəsinin rəqəmsal idarəetmə platforması. Tapşırıqlar, qiymətləndirmə, analitika — hamısı bir yerdə.</p>
+      <div class="hero-stats">
+        <div class="hs"><div class="hs-n">7</div><div class="hs-l">Sektor</div></div>
+        <div class="hs"><div class="hs-n">NKQ 89</div><div class="hs-l">Qiymətləndirmə</div></div>
+        <div class="hs"><div class="hs-n">AI</div><div class="hs-l">Köməkçi</div></div>
+        <div class="hs"><div class="hs-n">360°</div><div class="hs-l">Analitika</div></div>
+      </div>
+    </div>
+
+    <!-- SAĞ: Giriş -->
+    <div class="login-card">
+      <div class="step active" id="step1">
+        <div style="width:100%;border-radius:14px;overflow:hidden;margin-bottom:18px;box-shadow:0 8px 24px rgba(0,0,0,.4);">
+          <video autoplay muted loop playsinline style="width:100%;height:160px;object-fit:cover;display:block;">
+            <source src="/intro-video.mp4" type="video/mp4">
+            <div style="width:100%;height:160px;background:linear-gradient(135deg,#4f46e5,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:2rem;">🎓</div>
+          </video>
+        </div>
+        <div class="card-title">Xoş gəlmisiniz</div>
+        <div class="card-sub">Gmail hesabınızla daxil olun</div>
+
+        <button class="google-btn" id="googleBtn">
+          <svg width="20" height="20" viewBox="0 0 18 18">
+            <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.9c1.7-1.57 2.7-3.88 2.7-6.62z"/>
+            <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.9-2.26c-.8.54-1.83.86-3.06.86-2.36 0-4.35-1.59-5.06-3.73H.9v2.33A9 9 0 0 0 9 18z"/>
+            <path fill="#FBBC05" d="M3.94 10.69A5.4 5.4 0 0 1 3.66 9c0-.59.1-1.16.28-1.69V4.98H.9A9 9 0 0 0 0 9c0 1.45.35 2.83.9 4.02l3.04-2.33z"/>
+            <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .9 4.98l3.04 2.33C4.65 5.17 6.64 3.58 9 3.58z"/>
+          </svg>
+          Google ilə daxil ol
+        </button>
+
+        <div class="err" id="googleErr"></div>
+
+        <div class="divider">xüsusiyyətlər</div>
+
+        <div class="features">
+          <div class="feat"><div class="feat-icon">📋</div>Tapşırıq idarəetmə və izləmə</div>
+          <div class="feat"><div class="feat-icon">🏛</div>NKQ №89 qiymətləndirmə sistemi</div>
+          <div class="feat"><div class="feat-icon">✨</div>AI köməkçi — məktub, analiz</div>
+          <div class="feat"><div class="feat-icon">💬</div>İş Lenti — komanda ilə ünsiyyət</div>
+        </div>
+
+        <div class="card-footer">
+          Gəncə-Daşkəsən Regional Təhsil İdarəsi © 2026<br>
+          <span style="opacity:.5;">by Fuad Alakbarov</span>
+        </div>
+      </div>
+
+      <div class="step" id="step2">
+        <div class="loading-wrap">
+          <div class="spin"></div>
+          <div style="color:rgba(255,255,255,.7);font-size:.9rem;">Daxil olunur...</div>
+          <div style="color:rgba(255,255,255,.4);font-size:.78rem;margin-top:6px;">Bir an gözləyin</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Hissəcik generatoru -->
+<script>
+(function(){
+  const p = document.getElementById('particles');
+  for(let i=0;i<18;i++){
+    const d = document.createElement('div');
+    d.className='particle';
+    const sz = 20+Math.random()*80;
+    d.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;animation-duration:${8+Math.random()*14}s;animation-delay:${Math.random()*10}s;opacity:${.1+Math.random()*.3};`;
+    p.appendChild(d);
+  }
+})();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/js/supabase-config.js"></script>
+<script src="/js/api.js"></script>
+<script>
+function showStep(id){
+  document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+(async function(){
+  const hash=new URLSearchParams(location.hash.substring(1));
+  const accessToken=hash.get('access_token');
+  const providerToken=hash.get('provider_token');
+  const expiresIn=parseInt(hash.get('expires_in')||'3600');
+  if(accessToken){
+    showStep('step2');
+    history.replaceState(null,'',location.pathname);
+    if(providerToken){
+      localStorage.setItem('gdrive_token',providerToken);
+      localStorage.setItem('gdrive_token_expiry',Date.now()+(expiresIn-60)*1000);
+    }
+    try{
+      const {data:{session}}=await supabaseClient.auth.getSession();
+      const token=session?.access_token||accessToken;
+      const res=await apiCall('/auth/supabase-session','POST',{access_token:token});
+      await supabaseClient.auth.signOut();
+      localStorage.setItem('token',res.token);
+      localStorage.setItem('user',JSON.stringify(res.user));
+      const r=res.user.role;
+      location.href=['admin','director','deputy'].includes(r)?'/admin.html':'/my-dashboard.html';
+    }catch(err){
+      await supabaseClient.auth.signOut();
+      showStep('step1');
+      document.getElementById('googleErr').textContent='❌ '+err.message;
+    }
+    return;
+  }
+  if(getToken()){
+    const u=getUser();
+    location.href=['admin','director','deputy'].includes(u?.role)?'/admin.html':'/my-dashboard.html';
+  }
+})();
+
+document.getElementById('googleBtn').addEventListener('click',async()=>{
+  const errEl=document.getElementById('googleErr');
+  errEl.textContent='';
+  try{
+    const {error}=await supabaseClient.auth.signInWithOAuth({
+      provider:'google',
+      options:{redirectTo:location.origin+'/index.html',scopes:'email profile openid https://www.googleapis.com/auth/drive.file'}
+    });
+    if(error)errEl.textContent=error.message;
+  }catch(err){errEl.textContent=err.message;}
+});
+</script>
+</body>
+</html>

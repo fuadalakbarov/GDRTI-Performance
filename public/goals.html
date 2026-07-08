@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hədəflər — GDRTI Performans</title>
+<link rel="stylesheet" href="/css/style.css">
+<style>
+.goal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
+.goal-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;box-shadow:var(--shadow);}
+.goal-card.completed{border-color:#22c55e;background:#f0fdf4;}
+.goal-card.cancelled{opacity:.6;}
+.gc-title{font-weight:700;font-size:.95rem;color:var(--text);margin-bottom:4px;}
+.gc-meta{font-size:.76rem;color:var(--text-dim);margin-bottom:12px;}
+.gc-bar-wrap{background:#eef0fb;border-radius:8px;height:10px;overflow:hidden;margin-bottom:6px;}
+.gc-bar{height:100%;border-radius:8px;background:var(--grad);transition:width .4s;}
+.gc-bar.done{background:linear-gradient(135deg,#22c55e,#16a34a);}
+.gc-stats{display:flex;justify-content:space-between;font-size:.78rem;color:var(--text-dim);margin-bottom:12px;}
+.gc-period{display:inline-block;background:#f0eefa;color:var(--indigo);border-radius:20px;padding:2px 10px;font-size:.72rem;font-weight:600;}
+.gc-actions{display:flex;gap:8px;margin-top:12px;border-top:1px solid var(--border);padding-top:12px;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar"></div>
+  <div class="main">
+    <div class="topbar">
+      <div><h1>🎯 Hədəflər</h1><div class="subtitle">OKR — Rüblük hədəflər və irəliləyiş</div></div>
+      <button class="btn small" id="addGoalBtn" style="display:none;" onclick="showAddGoal()">+ Hədəf əlavə et</button>
+    </div>
+    <div class="goal-grid" id="goalGrid"><div class="empty-state">Yüklənir...</div></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="addGoalModal" style="display:none;">
+  <div class="modal">
+    <h3>🎯 Yeni hədəf</h3>
+    <form id="addGoalForm">
+      <div class="field"><label>Başlıq</label><input type="text" id="gTitle" required></div>
+      <div class="field"><label>Təsvir</label><textarea id="gDesc" rows="2"></textarea></div>
+      <div class="field">
+        <label>Kim üçün</label>
+        <select id="gTarget" required>
+          <option value="">Seçin...</option>
+          <optgroup label="Sektorlar" id="sectorOpts"></optgroup>
+          <optgroup label="İşçilər" id="empOpts"></optgroup>
+        </select>
+      </div>
+      <div class="field" style="display:flex;gap:10px;">
+        <div style="flex:1;"><label>Hədəf dəyər</label><input type="number" id="gTarget_val" required min="1"></div>
+        <div style="flex:1;"><label>Vahid</label><input type="text" id="gUnit" value="%" placeholder="%, say, fayl..."></div>
+      </div>
+      <div class="field" style="display:flex;gap:10px;">
+        <div style="flex:1;"><label>Dövr</label><input type="text" id="gPeriod" value="2026-Q3" placeholder="2026-Q3"></div>
+        <div style="flex:1;"><label>Son tarix</label><input type="date" id="gDue"></div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn secondary" onclick="document.getElementById('addGoalModal').style.display='none'">Ləğv et</button>
+        <button type="submit" class="btn">Əlavə et</button>
+      </div>
+      <div class="error-msg" id="gErr"></div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-bg" id="progressModal" style="display:none;">
+  <div class="modal" style="max-width:360px;">
+    <h3>📈 İrəliləyiş yenilə</h3>
+    <div class="field"><label>Cari dəyər</label><input type="number" id="progVal" min="0"></div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="document.getElementById('progressModal').style.display='none'">Ləğv et</button>
+      <button class="btn" onclick="saveProgress()">Saxla</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/sidebar.js"></script>
+<script>
+const user = requireAuth();
+let progGoalId = null;
+let employees = [], sectors = [];
+
+if (['admin','director','deputy'].includes(user.role)) document.getElementById('addGoalBtn').style.display = 'inline-flex';
+
+async function init(){
+  [sectors, employees] = await Promise.all([apiCall('/sectors'), apiCall('/employees/contacts')]);
+  const sOpts = document.getElementById('sectorOpts');
+  sectors.forEach(s => sOpts.innerHTML += `<option value="sector:${s.id}">📁 ${s.name}</option>`);
+  const eOpts = document.getElementById('empOpts');
+  employees.forEach(e => eOpts.innerHTML += `<option value="emp:${e.id}">${e.full_name}</option>`);
+  load();
+}
+
+async function load(){
+  try {
+    const goals = await apiCall('/goals');
+    const grid = document.getElementById('goalGrid');
+    if (!goals.length){ grid.innerHTML='<div class="empty-state">Hələ hədəf yoxdur</div>'; return; }
+    grid.innerHTML = goals.map(g => {
+      const pct = Math.min(100, Math.round((g.current_value/g.target_value)*100));
+      const canUpdate = g.assigned_to === user.id || ['admin','director','deputy'].includes(user.role);
+      return `
+        <div class="goal-card ${g.status}">
+          <div class="gc-title">${g.status==='completed'?'✅ ':''} ${g.title}</div>
+          <div class="gc-meta">
+            ${g.employees ? '👤 '+g.employees.full_name : ''} ${g.sectors ? '· 📁 '+g.sectors.name : ''}
+            <span class="gc-period" style="margin-left:6px;">${g.period}</span>
+            ${g.due_date ? ` · Son tarix: ${g.due_date}` : ''}
+          </div>
+          <div class="gc-bar-wrap"><div class="gc-bar ${g.status==='completed'?'done':''}" style="width:${pct}%"></div></div>
+          <div class="gc-stats">
+            <span>${g.current_value} / ${g.target_value} ${g.unit}</span>
+            <span><b>${pct}%</b></span>
+          </div>
+          ${g.description ? `<div style="font-size:.82rem;color:var(--text-dim);margin-bottom:8px;">${g.description}</div>` : ''}
+          <div class="gc-actions">
+            ${canUpdate && g.status!=='completed'?`<button class="btn small" onclick="openProgress('${g.id}',${g.current_value})">📈 Yenilə</button>`:''}
+            ${user.role==='admin'?`<button class="btn small secondary" style="color:var(--red);" onclick="deleteGoal('${g.id}')">🗑</button>`:''}
+          </div>
+        </div>`;
+    }).join('');
+  } catch(e){ document.getElementById('goalGrid').innerHTML=`<div class="empty-state">${e.message}</div>`; }
+}
+
+function openProgress(id, cur){ progGoalId=id; document.getElementById('progVal').value=cur; document.getElementById('progressModal').style.display='flex'; }
+async function saveProgress(){
+  const val = parseFloat(document.getElementById('progVal').value);
+  try{ await apiCall(`/goals/${progGoalId}/progress`,'PATCH',{current_value:val}); document.getElementById('progressModal').style.display='none'; load(); }
+  catch(e){ alert(e.message); }
+}
+async function deleteGoal(id){ if(!confirm('Silinsin?'))return; await apiCall(`/goals/${id}`,'DELETE'); load(); }
+function showAddGoal(){ document.getElementById('addGoalModal').style.display='flex'; }
+
+document.getElementById('addGoalForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const errEl=document.getElementById('gErr'); errEl.textContent='';
+  const tgt=document.getElementById('gTarget').value;
+  const [type,id]=tgt.split(':');
+  try {
+    await apiCall('/goals','POST',{
+      title: document.getElementById('gTitle').value.trim(),
+      description: document.getElementById('gDesc').value.trim(),
+      assigned_to: type==='emp' ? id : null,
+      sector_id: type==='sector' ? id : null,
+      target_value: parseFloat(document.getElementById('gTarget_val').value),
+      unit: document.getElementById('gUnit').value||'%',
+      period: document.getElementById('gPeriod').value,
+      due_date: document.getElementById('gDue').value||null
+    });
+    document.getElementById('addGoalModal').style.display='none';
+    document.getElementById('addGoalForm').reset();
+    load();
+  } catch(err){ errEl.textContent=err.message; }
+});
+
+init();
+</script>
+<script src="/js/chat-widget.js"></script>
+<script src="/js/animate.js"></script>
+</body>
+</html>

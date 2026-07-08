@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel — GDRTI Performans</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="app">
+  <div class="sidebar"></div>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <h1>Sektor Performansı</h1>
+        <div class="subtitle">Bütün sektorların fəaliyyət göstəriciləri</div>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn small" onclick="showAddSectorModal()" style="background:linear-gradient(135deg,#0891b2,#0e7490);box-shadow:0 4px 14px rgba(8,145,178,.3);">📁 Sektor əlavə et</button>
+        <button class="btn excel" onclick="showAddEmployeeModal()">👤 İşçi əlavə et</button>
+        <button class="btn excel" onclick="exportSectorsCSV()">📊 Excel</button>
+        <button class="btn small" style="background:linear-gradient(135deg,#dc2626,#991b1b);color:#fff;" id="pdfBtn" onclick="generatePDF(this)">📄 PDF</button>
+      </div>
+    </div>
+
+    <!-- Ayın işçisi banner -->
+    <div id="eomBanner" style="display:none;background:linear-gradient(135deg,#f0eefa,#fff8e1);border:1px solid #d8d0f5;border-radius:14px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:16px;">
+      <div style="font-size:2rem;">🏆</div>
+      <div id="eomPhoto" style="width:56px;height:56px;border-radius:50%;background:var(--grad);color:#fff;font-size:1.1rem;font-weight:700;display:flex;align-items:center;justify-content:center;overflow:hidden;border:3px solid #f59e0b;flex-shrink:0;"></div>
+      <div style="flex:1;">
+        <div style="font-size:.72rem;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:1px;">⭐ Ayın İşçisi</div>
+        <div id="eomName" style="font-size:1.1rem;font-weight:800;color:var(--text);"></div>
+        <div id="eomNote" style="font-size:.82rem;color:var(--text-dim);"></div>
+      </div>
+      <button class="btn small secondary" onclick="openEomModal()">Dəyiş</button>
+    </div>
+    <div id="eomEmpty" style="margin-bottom:16px;">
+      <button class="btn small secondary" onclick="openEomModal()">🏆 Ayın işçisini seç</button>
+    </div>
+
+    <div id="pendingSection" style="display:none; margin-bottom:32px;">
+      <div class="topbar">
+        <div>
+          <h1 style="font-size:1.1rem;">⏳ Sektoru gözləyən işçilər</h1>
+          <div class="subtitle">Əlavə edilib, amma hələ sektor təyin olunmayıb</div>
+        </div>
+      </div>
+      <div class="emp-list" id="pendingList"></div>
+    </div>
+
+    <div class="grid sectors" id="sectorsGrid"></div>
+
+    <div id="employeesSection" style="display:none; margin-top:32px;">
+      <div class="topbar">
+        <div>
+          <h1 id="sectorTitle"></h1>
+          <div class="subtitle">İşçilərin performans göstəriciləri</div>
+        </div>
+        <button class="btn small" onclick="showTaskModal()">+ Tapşırıq ver</button>
+      </div>
+      <div class="emp-list" id="empList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="taskModal" style="display:none;">
+  <div class="modal">
+    <h3>Yeni tapşırıq</h3>
+    <form id="taskForm">
+      <div class="field">
+        <label>İşçi</label>
+        <select id="taskEmployee" required></select>
+      </div>
+      <div class="field">
+        <label>Başlıq</label>
+        <input type="text" id="taskTitle" required placeholder="Tapşırığın adı">
+      </div>
+      <div class="field">
+        <label>Təsvir</label>
+        <textarea id="taskDesc" rows="3" placeholder="Ətraflı izah (istəyə görə)"></textarea>
+      </div>
+      <div class="field">
+        <label>Son tarix</label>
+        <input type="date" id="taskDue">
+      </div>
+      <div class="field">
+        <label>Prioritet</label>
+        <select id="taskPrio">
+          <option value="medium">🟡 Orta</option>
+          <option value="high">🔴 Yüksək</option>
+          <option value="low">🟢 Aşağı</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn secondary" onclick="closeTaskModal()">Ləğv et</button>
+        <button type="submit" class="btn">Təyin et</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Sektor əlavə et / redaktə et -->
+<div class="modal-bg" id="sectorModal" style="display:none;">
+  <div class="modal" style="max-width:400px;">
+    <h3 id="sectorModalTitle">📁 Yeni sektor</h3>
+    <form id="sectorForm">
+      <input type="hidden" id="sectorEditId">
+      <div class="field">
+        <label>Sektorun adı</label>
+        <input type="text" id="sectorName" required placeholder="məs. Maliyyə Sektoru">
+      </div>
+      <div class="field">
+        <label>Rəng</label>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <input type="color" id="sectorColor" value="#6366f1" style="width:48px;height:36px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;padding:2px;">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <div onclick="document.getElementById('sectorColor').value='#6366f1'" style="width:24px;height:24px;border-radius:50%;background:#6366f1;cursor:pointer;border:2px solid #fff;box-shadow:0 0 0 1px #6366f1;transition:.15s;" title="İndigo"></div>
+            <div onclick="document.getElementById('sectorColor').value='#7c3aed'" style="width:24px;height:24px;border-radius:50%;background:#7c3aed;cursor:pointer;border:2px solid #fff;box-shadow:0 0 0 1px #7c3aed;transition:.15s;" title="Violet"></div>
+            <div onclick="document.getElementById('sectorColor').value='#0891b2'" style="width:24px;height:24px;border-radius:50%;background:#0891b2;cursor:pointer;border:2px solid #fff;box-shadow:0 0 0 1px #0891b2;transition:.15s;" title="Mavi"></div>
+            <div onclick="document.getElementById('sectorColor').value='#16a34a'" style="width:24px;height:24px;border-radius:50%;background:#16a34a;cursor:pointer;border:2px solid #fff;box-shadow:0 0 0 1px #16a34a;transition:.15s;" title="Yaşıl"></div>
+            <div onclick="document.getElementById('sectorColor').value='#dc2626'" style="width:24px;height:24px;border-radius:50%;background:#dc2626;cursor:pointer;border:2px solid #fff;box-shadow:0 0 0 1px #dc2626;transition:.15s;" title="Qırmızı"></div>
+            <div onclick="document.getElementById('sectorColor').value='#f59e0b'" style="width:24px;height:24px;border-radius:50%;background:#f59e0b;cursor:pointer;border:2px solid #fff;box-shadow:0 0 0 1px #f59e0b;transition:.15s;" title="Sarı"></div>
+            <div onclick="document.getElementById('sectorColor').value='#db2777'" style="width:24px;height:24px;border-radius:50%;background:#db2777;cursor:pointer;border:2px solid #fff;box-shadow:0 0 0 1px #db2777;transition:.15s;" title="Çəhrayı"></div>
+            <div onclick="document.getElementById('sectorColor').value='#0d9488'" style="width:24px;height:24px;border-radius:50%;background:#0d9488;cursor:pointer;border:2px solid #fff;box-shadow:0 0 0 1px #0d9488;transition:.15s;" title="Firuzəyi"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn secondary" onclick="closeSectorModal()">Ləğv et</button>
+        <button type="submit" class="btn" id="sectorSubmitBtn">Əlavə et</button>
+      </div>
+      <div class="error-msg" id="sectorErr"></div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-bg" id="addEmpModal" style="display:none;">
+  <div class="modal">
+    <h3>➕ Yeni işçi əlavə et</h3>
+    <p style="font-size:.82rem; color:var(--text-dim); margin-bottom:16px;">
+      İşçi bu email ilə Google hesabından daxil olacaq. Yalnız bura əlavə etdiyiniz email-lər sistemə girə bilər.
+    </p>
+    <form id="addEmpForm">
+      <div class="field">
+        <label>Ad Soyad</label>
+        <input type="text" id="addEmpName" required placeholder="Ad Soyad">
+      </div>
+      <div class="field">
+        <label>Gmail ünvanı</label>
+        <input type="email" id="addEmpEmail" required placeholder="ad.soyad@gmail.com">
+      </div>
+      <div class="field">
+        <label>Vəzifə</label>
+        <input type="text" id="addEmpPosition" placeholder="məs. Baş mütəxəssis">
+      </div>
+      <div class="field">
+        <label>Sektor (istəyə görə, sonra da təyin edə bilərsiniz)</label>
+        <select id="addEmpSector">
+          <option value="">Seçilməyib</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Rol / Səlahiyyət</label>
+        <select id="addEmpRole">
+          <option value="employee">İşçi (tapşırıq ala bilər)</option>
+          <option value="sector_head">Sektor müdiri (öz sektoruna tapşırıq verə bilər)</option>
+          <option value="deputy">Müavin (hamıya tapşırıq verə bilər)</option>
+          <option value="director">Müdir (hamıya tapşırıq verə bilər)</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn secondary" onclick="closeAddEmpModal()">Ləğv et</button>
+        <button type="submit" class="btn">Əlavə et</button>
+      </div>
+      <div class="error-msg" id="addEmpErr"></div>
+    </form>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+const user = requireAuth();
+const MANAGER_ROLES = ['admin','director','deputy'];
+const isManager = MANAGER_ROLES.includes(user.role);
+if (!MANAGER_ROLES.includes(user.role)) location.href = '/my-dashboard.html';
+let currentSectorId = null;
+let allEmployees = [];
+
+let lastSectors = [];
+async function loadSectors(){
+  try {
+    const sectors = await apiCall('/sectors');
+    lastSectors = sectors || [];
+  } catch(e) {
+    lastSectors = [];
+    console.error('Sektor yükləmə xətası:', e.message);
+  }
+  const grid = document.getElementById('sectorsGrid');
+  if (!grid) return;
+  if (!lastSectors.length) {
+    grid.innerHTML = `<div style="grid-column:1/-1;padding:32px;text-align:center;color:var(--text-mute);">
+      <div style="font-size:2rem;margin-bottom:10px;">📂</div>
+      <div style="font-weight:700;margin-bottom:6px;">Hələ sektor yoxdur</div>
+      <div style="font-size:.84rem;">Supabase-də sektorları əlavə edin.</div>
+    </div>`;
+    return;
+  }
+  grid.innerHTML = lastSectors.map((s, idx) => {
+    const col = s.color || '#6366f1';
+    return `
+    <div class="sc" style="--ac:${col};animation-delay:${idx*0.07}s" onclick="openSector('${s.id}','${s.name.replace(/'/g,"\\'")}')">
+      <div class="sc-top-bar"></div>
+      <div class="sc-body">
+        <div class="sc-head">
+          <div class="sc-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <div class="sc-actions" onclick="event.stopPropagation()">
+            <button class="sc-btn sc-edit" onclick="editSector('${s.id}','${s.name.replace(/'/g,"\\'")}','${col}')" title="Redaktə">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>
+            </button>
+            <button class="sc-btn sc-del" onclick="deleteSector('${s.id}','${s.name.replace(/'/g,"\\'")}' )" title="Sil">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="sc-name">${s.name}</div>
+        <div class="sc-pills">
+          <span class="sc-pill">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            ${s.employee_count} işçi
+          </span>
+          <span class="sc-pill">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            ${s.task_count} tapşırıq
+          </span>
+        </div>
+        <div class="sc-prog-wrap">
+          <div class="sc-prog-bar">
+            <div class="sc-prog-fill" style="width:${s.avg_completion}%"></div>
+          </div>
+          <span class="sc-prog-pct">${s.avg_completion}%</span>
+        </div>
+        <div class="sc-footer">
+          <div class="sc-stat"><div class="sc-stat-n">${s.avg_completion}%</div><div class="sc-stat-l">Tamamlama</div></div>
+          <div class="sc-divider"></div>
+          <div class="sc-stat"><div class="sc-stat-n">${s.avg_points}</div><div class="sc-stat-l">Orta bal</div></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function openSector(id, name){
+  currentSectorId = id;
+  document.getElementById('sectorTitle').textContent = name;
+  document.getElementById('employeesSection').style.display = 'block';
+  const employees = await apiCall(`/sectors/${id}/employees`);
+  const list = document.getElementById('empList');
+  list.innerHTML = employees.map((e, idx) => `
+    <div class="emp-card" style="animation-delay:${idx*0.05}s" onclick="location.href='/employee-detail.html?id=${e.id}'">
+      <div class="emp-av-wrap">
+        ${e.photo_url ? `<img class="emp-av" src="${e.photo_url}" alt="${e.full_name}">` : `<div class="emp-av emp-av-initial">${initials(e.full_name)}</div>`}
+        <div class="emp-av-status ${e.stats.completionRate >= 70 ? 'status-good' : e.stats.completionRate >= 40 ? 'status-mid' : 'status-low'}"></div>
+      </div>
+      <div class="emp-details">
+        <div class="emp-name">${e.full_name}</div>
+        <div class="emp-pos">${e.position || 'İşçi'}</div>
+        <div class="emp-prog-row">
+          <div class="emp-prog-bar"><div class="emp-prog-fill" style="width:${e.stats.completionRate}%"></div></div>
+          <span class="emp-prog-txt">${e.stats.completedCount}/${e.stats.totalCount}</span>
+        </div>
+      </div>
+      <div class="emp-score-wrap">
+        <div class="emp-score">${e.stats.points}</div>
+        <div class="emp-score-lbl">bal</div>
+      </div>
+      <div class="emp-btns" onclick="event.stopPropagation()">
+        <button class="emp-act-btn" onclick="location.href='/employee-detail.html?id=${e.id}'" title="Ətraflı bax">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+        <button class="emp-act-btn emp-act-del" onclick="deleteEmployee('${e.id}','${e.full_name.replace(/'/g,"\\'")}' )" title="Sil">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        </button>
+      </div>
+    </div>
+  `).join('') || '<div class="empty-state" style="padding:32px;text-align:center;color:var(--text-mute);">Bu sektorda işçi yoxdur</div>';
+  document.getElementById('employeesSection').scrollIntoView({behavior:'smooth'});
+}
+
+async function deleteEmployee(id, name){
+  if (!confirm(`"${name}" işçisini sistemdən silmək istədiyinizə əminsiniz?\nBu əməliyyat geri qaytarıla bilməz.`)) return;
+  try {
+    await apiCall(`/employees/${id}`, 'DELETE');
+    allEmployees = await apiCall('/employees');
+    renderPending();
+    if (currentSectorId) openSector(currentSectorId, document.getElementById('sectorTitle').textContent);
+    loadSectors();
+  } catch(err){ alert(err.message); }
+}
+
+function renderPending(){
+  const pending = allEmployees.filter(e => !e.sector_id && e.role === 'employee');
+  const section = document.getElementById('pendingSection');
+  if (!pending.length) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  document.getElementById('pendingList').innerHTML = pending.map(e => `
+    <div class="emp-row" style="cursor:default;">
+      ${e.photo_url ? `<img class="emp-photo" src="${e.photo_url}">` : `<div class="emp-photo">${initials(e.full_name)}</div>`}
+      <div class="emp-info">
+        <div class="name">${e.full_name}</div>
+        <div class="pos">${e.email}</div>
+      </div>
+      <select class="status-select" id="sectorPick-${e.id}" style="min-width:180px;">
+        <option value="">Sektor seç...</option>
+        ${lastSectors.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
+      </select>
+      <input type="text" class="status-select" id="posPick-${e.id}" placeholder="Vəzifə" style="width:140px;">
+      <button class="btn small" onclick="assignSector('${e.id}')">Təyin et</button>
+    </div>
+  `).join('');
+}
+
+async function assignSector(empId){
+  const sectorId = document.getElementById(`sectorPick-${empId}`).value;
+  const position = document.getElementById(`posPick-${empId}`).value;
+  if (!sectorId) { alert('Sektor seçin'); return; }
+  try {
+    await apiCall(`/employees/${empId}`, 'PUT', { sector_id: sectorId, position });
+    allEmployees = await apiCall('/employees');
+    renderPending();
+    loadSectors();
+  } catch(err){ alert(err.message); }
+}
+
+function exportSectorsCSV(){
+  const rows = [['Sektor','İşçi sayı','Tapşırıq sayı','Tamamlama %','Orta bal']];
+  lastSectors.forEach(s => rows.push([s.name, s.employee_count, s.task_count, s.avg_completion, s.avg_points]));
+  const csv = '\uFEFF' + rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'sektor-performansi.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function generatePDF(btn){
+  if (!btn) btn = document.getElementById('pdfBtn');
+  const origText = btn?.textContent || '📄 PDF Hesabat';
+  if (btn) { btn.textContent = '⏳ Hazırlanır...'; btn.disabled = true; }
+
+  try {
+    const [empData] = await Promise.all([apiCall('/admin/employee-stats')]);
+    empData.sort((a,b) => b.stats.points - a.stats.points);
+    const month = new Date().toLocaleDateString('az-AZ', { year:'numeric', month:'long' });
+    const date  = new Date().toLocaleDateString('az-AZ');
+
+    const html = `<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<title>GDRTI Performans Hesabatı</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Inter',sans-serif;color:#1e1a3c;background:#fff;font-size:12px;}
+  .header{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;padding:24px 32px;margin-bottom:24px;}
+  .header h1{font-size:20px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px;}
+  .header p{font-size:12px;opacity:.85;}
+  .container{padding:0 32px 32px;}
+  h2{font-size:14px;font-weight:800;color:#4f46e5;margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid #e8eaf6;}
+  table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:4px;}
+  th{background:#f0eefa;color:#4f46e5;font-weight:700;padding:8px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.04em;}
+  td{padding:7px 10px;border-bottom:1px solid #f0f0f8;}
+  tr:nth-child(even) td{background:#fafafe;}
+  .badge{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;}
+  .b-high{background:#d1fae5;color:#065f46;}
+  .b-mid{background:#dbeafe;color:#1e40af;}
+  .b-low{background:#fee2e2;color:#991b1b;}
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+  .stat-box{border:1px solid #e8eaf6;border-radius:10px;padding:12px;text-align:center;}
+  .stat-box .n{font-size:22px;font-weight:800;color:#4f46e5;}
+  .stat-box .l{font-size:10px;color:#6b7280;margin-top:2px;}
+  .medal{font-size:14px;}
+  .footer{text-align:center;color:#9ca3af;font-size:10px;margin-top:24px;padding-top:16px;border-top:1px solid #e8eaf6;}
+  @media print{
+    body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    @page{margin:0;size:A4;}
+    .header{margin:0;}
+    .no-print{display:none;}
+  }
+</style>
+</head>
+<body>
+<div class="no-print" style="padding:12px 32px;background:#f0eefa;border-bottom:1px solid #c7cae8;display:flex;justify-content:space-between;align-items:center;">
+  <span style="font-weight:700;color:#4f46e5;">📄 Çap etmək üçün: Cmd+P (Mac) / Ctrl+P (Windows) → "PDF olaraq saxla"</span>
+  <button onclick="window.print()" style="background:#4f46e5;color:#fff;border:none;padding:8px 20px;border-radius:8px;cursor:pointer;font-weight:700;font-size:12px;">🖨 Çap et / PDF saxla</button>
+</div>
+<div class="header">
+  <h1>GDRTI Performans Hesabatı</h1>
+  <p>Gəncə-Daşkəsən Regional Təhsil İdarəsi &nbsp;|&nbsp; ${month} &nbsp;|&nbsp; Tarix: ${date}</p>
+</div>
+<div class="container">
+  <div class="stat-grid">
+    <div class="stat-box"><div class="n">${lastSectors.length}</div><div class="l">Sektor</div></div>
+    <div class="stat-box"><div class="n">${lastSectors.reduce((s,x)=>s+x.employee_count,0)}</div><div class="l">İşçi</div></div>
+    <div class="stat-box"><div class="n">${lastSectors.reduce((s,x)=>s+x.task_count,0)}</div><div class="l">Tapşırıq</div></div>
+    <div class="stat-box"><div class="n">${empData.length ? Math.round(empData.reduce((s,e)=>s+e.stats.points,0)/empData.length) : 0}</div><div class="l">Orta bal</div></div>
+  </div>
+
+  <h2>📊 Sektor Performansı</h2>
+  <table>
+    <tr><th>Sektor</th><th>İşçi</th><th>Tapşırıq</th><th>Tamamlama</th><th>Orta bal</th></tr>
+    ${lastSectors.map((s,i) => `
+    <tr>
+      <td>${s.name}</td>
+      <td>${s.employee_count}</td>
+      <td>${s.task_count}</td>
+      <td>${s.avg_completion}%</td>
+      <td><b style="color:#4f46e5;">${s.avg_points}</b></td>
+    </tr>`).join('')}
+  </table>
+
+  <h2>🏆 Ən Yüksək Ballı 10 İşçi</h2>
+  <table>
+    <tr><th>#</th><th>Ad Soyad</th><th>Vəzifə</th><th>Sektor</th><th>Bal</th><th>Tamamlama</th></tr>
+    ${empData.slice(0,10).map((e,i) => `
+    <tr>
+      <td><span class="medal">${['🥇','🥈','🥉'][i]||i+1}</span></td>
+      <td><b>${e.full_name}</b></td>
+      <td>${e.position||'—'}</td>
+      <td>${e.sectors?.name||'—'}</td>
+      <td><b style="color:#4f46e5;">${e.stats.points}</b></td>
+      <td>${e.stats.completionRate}%</td>
+    </tr>`).join('')}
+  </table>
+
+  <div class="footer">GDRTI Performans İdarəetmə Sistemi &nbsp;|&nbsp; ${date}</div>
+</div>
+</body></html>`;
+
+    const w = window.open('', '_blank');
+    if (!w) { alert('Pop-up bloklanıb. Brauzerdə pop-up-a icazə verin.'); return; }
+    w.document.write(html);
+    w.document.close();
+    setTimeout(() => { try { w.print(); } catch(e) {} }, 800);
+  } catch(e) {
+    alert('Xəta: ' + e.message);
+  } finally {
+    if (btn) { btn.textContent = origText; btn.disabled = false; }
+  }
+}
+
+// ─── SEKTOR CRUD ─────────────────────────────────────────
+function showAddSectorModal(){
+  document.getElementById('sectorEditId').value = '';
+  document.getElementById('sectorModalTitle').textContent = '📁 Yeni sektor';
+  document.getElementById('sectorSubmitBtn').textContent = 'Əlavə et';
+  document.getElementById('sectorName').value = '';
+  document.getElementById('sectorColor').value = '#6366f1';
+  document.getElementById('sectorErr').textContent = '';
+  document.getElementById('sectorModal').style.display = 'flex';
+  setTimeout(() => document.getElementById('sectorName').focus(), 100);
+}
+
+function editSector(id, name, color){
+  document.getElementById('sectorEditId').value = id;
+  document.getElementById('sectorModalTitle').textContent = '✏️ Sektoru redaktə et';
+  document.getElementById('sectorSubmitBtn').textContent = 'Saxla';
+  document.getElementById('sectorName').value = name;
+  document.getElementById('sectorColor').value = color || '#6366f1';
+  document.getElementById('sectorErr').textContent = '';
+  document.getElementById('sectorModal').style.display = 'flex';
+  setTimeout(() => document.getElementById('sectorName').focus(), 100);
+}
+
+function closeSectorModal(){ document.getElementById('sectorModal').style.display = 'none'; }
+
+document.getElementById('sectorForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById('sectorErr');
+  errEl.textContent = '';
+  const id = document.getElementById('sectorEditId').value;
+  const body = {
+    name: document.getElementById('sectorName').value.trim(),
+    color: document.getElementById('sectorColor').value,
+  };
+  try {
+    if (id) {
+      await apiCall(`/sectors/${id}`, 'PUT', body);
+    } else {
+      await apiCall('/sectors', 'POST', body);
+    }
+    closeSectorModal();
+    loadSectors();
+  } catch(err) { errEl.textContent = err.message; }
+});
+
+async function deleteSector(id, name){
+  if (!confirm(`"${name}" sektoru silinsin?\n\nDiqqət: Bu sektorun işçilərinin sektor təyinatı ləğv ediləcək, lakin özləri silinməyəcək.`)) return;
+  try {
+    await apiCall(`/sectors/${id}`, 'DELETE');
+    if (currentSectorId === id) {
+      currentSectorId = null;
+      document.getElementById('employeesSection').style.display = 'none';
+    }
+    loadSectors();
+  } catch(err) { alert(err.message); }
+}
+
+function showAddEmployeeModal(){
+  const sel = document.getElementById('addEmpSector');
+  sel.innerHTML = '<option value="">Seçilməyib</option>' +
+    lastSectors.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+  document.getElementById('addEmpForm').reset();
+  document.getElementById('addEmpErr').textContent = '';
+  document.getElementById('addEmpModal').style.display = 'flex';
+}
+function closeAddEmpModal(){ document.getElementById('addEmpModal').style.display = 'none'; }
+
+document.getElementById('addEmpForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById('addEmpErr');
+  errEl.textContent = '';
+  try {
+    await apiCall('/employees', 'POST', {
+      full_name: document.getElementById('addEmpName').value.trim(),
+      email: document.getElementById('addEmpEmail').value.trim(),
+      position: document.getElementById('addEmpPosition').value.trim(),
+      sector_id: document.getElementById('addEmpSector').value || null,
+      role: document.getElementById('addEmpRole').value || 'employee'
+    });
+    closeAddEmpModal();
+    allEmployees = await apiCall('/employees');
+    renderPending();
+    loadSectors();
+  } catch (err) {
+    errEl.textContent = err.message;
+  }
+});
+
+function showTaskModal(){
+  document.getElementById('taskModal').style.display = 'flex';
+  const sel = document.getElementById('taskEmployee');
+  sel.innerHTML = allEmployees
+    .filter(e => !currentSectorId || e.sector_id === currentSectorId)
+    .map(e => `<option value="${e.id}">${e.full_name}</option>`).join('');
+}
+function closeTaskModal(){ document.getElementById('taskModal').style.display = 'none'; }
+
+document.getElementById('taskForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  try {
+    await apiCall('/tasks', 'POST', {
+      employee_id: document.getElementById('taskEmployee').value,
+      title: document.getElementById('taskTitle').value,
+      description: document.getElementById('taskDesc').value,
+      due_date: document.getElementById('taskDue').value || null,
+      priority: document.getElementById('taskPrio').value || 'medium'
+    });
+    closeTaskModal();
+    document.getElementById('taskForm').reset();
+    if (currentSectorId) openSector(currentSectorId, document.getElementById('sectorTitle').textContent);
+    loadSectors();
+  } catch(err){ alert(err.message); }
+});
+
+(async function init(){
+  allEmployees = await apiCall('/employees');
+  await loadSectors();
+  renderPending();
+  loadEOM();
+})();
+
+// Ayın işçisi
+async function loadEOM(){
+  try{
+    const eom = await apiCall('/settings/employee-of-month');
+    if (eom && eom.employee){
+      document.getElementById('eomBanner').style.display='flex';
+      document.getElementById('eomEmpty').style.display='none';
+      const ph=document.getElementById('eomPhoto');
+      ph.innerHTML=eom.employee.photo_url?`<img src="${eom.employee.photo_url}" style="width:100%;height:100%;object-fit:cover;">`:`<span>${initials(eom.employee.full_name)}</span>`;
+      document.getElementById('eomName').textContent=eom.employee.full_name;
+      document.getElementById('eomNote').textContent=eom.note||eom.employee.position||'';
+    } else {
+      document.getElementById('eomBanner').style.display='none';
+      document.getElementById('eomEmpty').style.display='block';
+    }
+  }catch(e){}
+}
+
+function openEomModal(){
+  const emp = prompt('İşçinin adını yazın (tam ad ilə axtarılır):');
+  if (!emp) return;
+  const found = allEmployees.filter(e=>e.full_name.toLowerCase().includes(emp.toLowerCase()));
+  if (!found.length){ alert('İşçi tapılmadı'); return; }
+  let choice = found[0];
+  if (found.length>1){
+    const names = found.map((e,i)=>`${i+1}. ${e.full_name}`).join('\n');
+    const idx = parseInt(prompt(`Neçənci?\n${names}`))-1;
+    if (isNaN(idx)||!found[idx]) return;
+    choice=found[idx];
+  }
+  const note = prompt('Qeyd (istəyə görə):', choice.position||'') || '';
+  apiCall('/settings/employee-of-month','PUT',{employee_id:choice.id,note,month:new Date().toISOString().slice(0,7)}).then(()=>loadEOM()).catch(e=>alert(e.message));
+}
+</script>
+<script src="/js/sidebar.js"></script>
+<script src="/js/chat-widget.js"></script>
+<script src="/js/animate.js"></script>
+</body>
+</html>

@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Workspace — GDRTI Performans</title>
+<link rel="stylesheet" href="/css/style.css">
+<style>
+.ws-toolbar{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center;}
+.ws-search{flex:1;min-width:180px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:9px 14px;font-size:.88rem;color:var(--text);outline:none;font-family:inherit;}
+.ws-search:focus{border-color:var(--indigo);}
+.ws-filter-btn{padding:8px 14px;border:1px solid var(--border);border-radius:10px;background:var(--card);font-size:.82rem;font-weight:600;color:var(--text-dim);cursor:pointer;font-family:inherit;transition:.15s;}
+.ws-filter-btn.active{background:var(--indigo);color:#fff;border-color:var(--indigo);}
+.ws-filter-btn:hover:not(.active){border-color:var(--indigo);color:var(--indigo);}
+.gq-wrap{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
+.gq-btn{display:flex;align-items:center;gap:7px;padding:9px 16px;background:var(--card);border:1px solid var(--border);border-radius:11px;cursor:pointer;font-size:.84rem;font-weight:600;color:var(--text);transition:.2s;box-shadow:var(--shadow);font-family:inherit;}
+.gq-btn:hover{border-color:var(--indigo);transform:translateY(-1px);}
+.folders-row{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center;}
+.folder-chip{display:flex;align-items:center;gap:6px;padding:7px 14px;background:var(--card);border:1px solid var(--border);border-radius:20px;cursor:pointer;font-size:.83rem;font-weight:600;transition:.15s;font-family:inherit;}
+.folder-chip:hover,.folder-chip.active{background:#f0eefa;border-color:var(--indigo);color:var(--indigo);}
+.folder-chip .del-folder{opacity:0;font-size:.7rem;color:var(--red);margin-left:2px;}
+.folder-chip:hover .del-folder{opacity:1;}
+.doc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
+.doc-card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;transition:.2s;}
+.doc-card:hover{border-color:#c8c4f0;box-shadow:0 6px 20px rgba(99,102,241,.1);}
+.dc-head{padding:16px 16px 10px;display:flex;gap:10px;}
+.dc-icon{font-size:1.8rem;flex-shrink:0;}
+.dc-info{flex:1;min-width:0;}
+.dc-title{font-weight:700;font-size:.92rem;color:var(--text);word-break:break-word;}
+.dc-type{font-size:.72rem;color:var(--indigo);font-weight:600;margin-top:2px;}
+.dc-meta{font-size:.72rem;color:var(--text-mute);margin-top:2px;}
+.dc-folder-badge{display:inline-block;background:#f0eefa;color:var(--indigo);border-radius:10px;padding:1px 8px;font-size:.7rem;font-weight:600;margin-top:4px;}
+.dc-actions{padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap;background:#fafafa;}
+.dc-comments{border-top:1px solid var(--border);}
+.dc-cmt-toggle{padding:8px 14px;font-size:.78rem;color:var(--indigo);cursor:pointer;font-weight:600;}
+.dc-cmt-toggle:hover{background:#f6f5ff;}
+.dc-cmt-list{padding:0 14px;max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;}
+.dc-cmt-item{display:flex;gap:7px;padding:5px 0;}
+.dc-cmt-av{width:24px;height:24px;border-radius:50%;background:var(--grad);color:#fff;font-size:.58rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;}
+.dc-cmt-body{flex:1;}
+.dc-cmt-name{font-size:.75rem;font-weight:700;}
+.dc-cmt-text{font-size:.82rem;color:var(--text);}
+.dc-cmt-foot{font-size:.68rem;color:var(--text-mute);display:flex;gap:8px;}
+.dc-cmt-action{color:var(--indigo);cursor:pointer;}
+.dc-cmt-form{display:flex;gap:6px;padding:8px 14px;border-top:1px solid var(--border);background:#fafafa;}
+.dc-cmt-form input{flex:1;background:#fff;border:1px solid var(--border);border-radius:18px;padding:6px 12px;font-size:.82rem;outline:none;font-family:inherit;}
+.dc-cmt-form input:focus{border-color:var(--indigo);}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar"></div>
+  <div class="main">
+    <div class="topbar">
+      <div><h1>🗂 Workspace</h1><div class="subtitle">Google Drive sənədlərini idarə edin</div></div>
+    </div>
+
+    <!-- Yeni sənəd düymələri -->
+    <div class="gq-wrap">
+      <button class="gq-btn" onclick="newDoc('doc')">📘 Yeni Google Doc</button>
+      <button class="gq-btn" onclick="newDoc('sheet')">📗 Yeni Google Sheet</button>
+      <button class="gq-btn" onclick="newDoc('slide')">📙 Yeni Google Slide</button>
+      <button class="gq-btn" onclick="newDoc('form')">📋 Yeni Google Form</button>
+      <button class="gq-btn" onclick="showAddLink()">🔗 Mövcud sənəd</button>
+      <button class="gq-btn" onclick="createFolder()">📁 Qovluq yarat</button>
+    </div>
+
+    <!-- Qovluqlar -->
+    <div class="folders-row" id="foldersRow"></div>
+
+    <!-- Axtarış + filter -->
+    <div class="ws-toolbar">
+      <input type="text" class="ws-search" id="searchInput" placeholder="🔍 Sənəd axtar..." oninput="applyFilter()">
+      <button class="ws-filter-btn active" data-type="" onclick="setTypeFilter(this,'')">Hamısı</button>
+      <button class="ws-filter-btn" data-type="doc" onclick="setTypeFilter(this,'doc')">📘 Doc</button>
+      <button class="ws-filter-btn" data-type="sheet" onclick="setTypeFilter(this,'sheet')">📗 Sheet</button>
+      <button class="ws-filter-btn" data-type="slide" onclick="setTypeFilter(this,'slide')">📙 Slide</button>
+      <button class="ws-filter-btn" data-type="form" onclick="setTypeFilter(this,'form')">📋 Form</button>
+    </div>
+
+    <div class="doc-grid" id="docGrid">
+      <div style="color:var(--text-mute);font-size:.88rem;padding:10px;">Yüklənir...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Paylaş modal -->
+<div class="modal-bg" id="shareModal" style="display:none;">
+  <div class="modal" style="max-width:440px;">
+    <h3>📤 Sənədi paylaş</h3>
+    <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:14px;">İşçiləri seçin — onlar sənədi görüb şərh yaza biləcək.</p>
+    <div id="shareList" style="max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;"></div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeShare()">Ləğv et</button>
+      <button class="btn" onclick="doShare()">Paylaş</button>
+    </div>
+    <div class="error-msg" id="shareErr"></div>
+  </div>
+</div>
+
+<!-- Qovluğa köçür modal -->
+<div class="modal-bg" id="moveFolderModal" style="display:none;">
+  <div class="modal" style="max-width:360px;">
+    <h3>📁 Qovluğa köçür</h3>
+    <div id="folderChoiceList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="document.getElementById('moveFolderModal').style.display='none'">Ləğv et</button>
+    </div>
+  </div>
+</div>
+
+<!-- Link əlavə et modal -->
+<div class="modal-bg" id="addModal" style="display:none;">
+  <div class="modal">
+    <h3>🔗 Google sənədi əlavə et</h3>
+    <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:14px;">Google Drive-da sənəd yaradıb linki yapışdırın.</p>
+    <form id="addForm">
+      <div class="field"><label>Ad</label><input type="text" id="fTitle" required placeholder="məs. 2026 İllik Hesabat"></div>
+      <div class="field"><label>Link</label><input type="url" id="fUrl" required placeholder="https://docs.google.com/..."></div>
+      <div class="field"><label>Qeyd</label><input type="text" id="fDesc" placeholder="İstəyə görə"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn secondary" onclick="document.getElementById('addModal').style.display='none'">Ləğv et</button>
+        <button type="submit" class="btn">Əlavə et</button>
+      </div>
+      <div class="error-msg" id="addErr"></div>
+    </form>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/sidebar.js"></script>
+<script>
+const user = requireAuth();
+
+const ICONS = {doc:'📘',sheet:'📗',slide:'📙',form:'📋',other:'📄'};
+const NAMES = {doc:'Google Doc',sheet:'Google Sheet',slide:'Google Slide',form:'Google Form',other:'Fayl'};
+const MIMES = {doc:'application/vnd.google-apps.document',sheet:'application/vnd.google-apps.spreadsheet',slide:'application/vnd.google-apps.presentation',form:'application/vnd.google-apps.form'};
+const DL = {doc:id=>`https://docs.google.com/document/d/${id}/export?format=docx`,sheet:id=>`https://docs.google.com/spreadsheets/d/${id}/export?format=xlsx`,slide:id=>`https://docs.google.com/presentation/d/${id}/export/pptx`,other:id=>`https://drive.google.com/uc?export=download&id=${id}`};
+
+function gdToken(){ return localStorage.getItem('gdrive_token'); }
+function gdOk(){ return !!gdToken() && Date.now() < parseInt(localStorage.getItem('gdrive_token_expiry')||'0'); }
+function extractId(url){ const m=url.match(/\/d\/([a-zA-Z0-9_-]{10,})/); return m?m[1]:null; }
+function escH(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escA(s){ return String(s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function avHtml(e,size){ const s=size||28; return e?.photo_url?`<img src="${e.photo_url}" style="width:${s}px;height:${s}px;border-radius:50%;object-fit:cover;">`:`<span style="font-size:${Math.round(s*.32)}px;">${initials(e?.full_name||'?')}</span>`; }
+
+let allDocs=[], allFolders=[], contacts=[];
+let currentFolder=null, currentType='', currentSearch='';
+let currentShareDocId=null;
+
+// ─── YÜKLƏ ─────────────────────────────────────────────────
+async function load(){
+  try {
+    [allDocs, allFolders] = await Promise.all([apiCall('/gdrive'), apiCall('/gdrive/folders')]);
+    if (!contacts.length) contacts = await apiCall('/employees/contacts');
+  } catch(e){ allDocs=[]; allFolders=[]; }
+  renderFolders();
+  applyFilter();
+}
+
+function renderFolders(){
+  const row = document.getElementById('foldersRow');
+  row.innerHTML = `
+    <button class="folder-chip ${!currentFolder?'active':''}" onclick="setFolder(null)">📂 Hamısı</button>
+    <button class="folder-chip" onclick="setFolder('none')">📄 Qovluqsuz</button>
+    ${allFolders.map(f=>`
+      <button class="folder-chip ${currentFolder===f.id?'active':''}" onclick="setFolder('${f.id}')">
+        📁 ${escH(f.name)}
+        <span class="del-folder" onclick="event.stopPropagation();deleteFolder('${f.id}')">✕</span>
+      </button>`).join('')}
+  `;
+}
+
+function applyFilter(){
+  let docs = allDocs;
+  if (currentFolder === 'none') docs = docs.filter(d => !d.folder_id);
+  else if (currentFolder) docs = docs.filter(d => d.folder_id === currentFolder);
+  if (currentType) docs = docs.filter(d => d.doc_type === currentType);
+  if (currentSearch) {
+    const q = currentSearch.toLowerCase();
+    docs = docs.filter(d => d.title.toLowerCase().includes(q) || (d.description||'').toLowerCase().includes(q));
+  }
+  renderGrid(docs);
+}
+
+function setFolder(id){ currentFolder=id; renderFolders(); applyFilter(); }
+function setTypeFilter(btn, type){
+  document.querySelectorAll('.ws-filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  currentType=type; applyFilter();
+}
+document.getElementById('searchInput').addEventListener('input', e => { currentSearch=e.target.value; applyFilter(); });
+
+function renderGrid(docs){
+  const grid = document.getElementById('docGrid');
+  if (!docs.length){ grid.innerHTML='<div class="empty-state">Heç bir sənəd tapılmadı</div>'; return; }
+  grid.innerHTML = docs.map(d => cardHtml(d)).join('');
+  grid.querySelectorAll('[data-action]').forEach(el => el.addEventListener('click', handleAction));
+}
+
+function cardHtml(d){
+  const isOwner = d.added_by===user.id || user.role==='admin';
+  const fileId = extractId(d.url);
+  const dlUrl = fileId && DL[d.doc_type] ? DL[d.doc_type](fileId) : d.url;
+  const folder = allFolders.find(f => f.id === d.folder_id);
+  const sharedAv = (d.shares||[]).map(s=>`<div style="width:20px;height:20px;border-radius:50%;background:var(--grad);color:#fff;font-size:.52rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;border:2px solid #fff;" title="${s.employees?.full_name||''}">${avHtml(s.employees,20)}</div>`).join('');
+  return `<div class="doc-card" id="card-${d.id}">
+    <div class="dc-head">
+      <span class="dc-icon">${ICONS[d.doc_type]||'📄'}</span>
+      <div class="dc-info">
+        <div class="dc-title">${escH(d.title)}</div>
+        <div class="dc-type">${NAMES[d.doc_type]||'Fayl'}</div>
+        <div class="dc-meta">${d.employees?.full_name||''} · ${timeAgo(d.created_at)}</div>
+        ${folder?`<span class="dc-folder-badge">📁 ${escH(folder.name)}</span>`:''}
+        ${d.description?`<div class="dc-meta" style="margin-top:3px;">${escH(d.description)}</div>`:''}
+        ${sharedAv?`<div style="display:flex;gap:3px;margin-top:5px;">${sharedAv}</div>`:''}
+      </div>
+    </div>
+    <div class="dc-actions">
+      <a href="${d.url}" target="_blank" class="btn small">↗ Aç</a>
+      <a href="${dlUrl}" target="_blank" class="btn small secondary">⬇️</a>
+      ${isOwner?`<button class="btn small secondary" data-action="share" data-id="${d.id}">📤</button>`:''}
+      ${isOwner?`<button class="btn small secondary" data-action="move" data-id="${d.id}">📁</button>`:''}
+      ${isOwner?`<button class="btn small secondary" data-action="rename" data-id="${d.id}" data-title="${escA(d.title)}">✏️</button>`:''}
+      ${isOwner?`<button class="btn small secondary" data-action="remove" data-id="${d.id}" style="color:var(--red);">🗑</button>`:''}
+    </div>
+    <div class="dc-comments">
+      <div class="dc-cmt-toggle" data-action="comments" data-id="${d.id}">💬 ${d.comment_count||0} şərh</div>
+      <div class="dc-cmt-list" id="cmts-${d.id}" style="display:none;flex-direction:column;gap:6px;"></div>
+      <div class="dc-cmt-form" id="cmtForm-${d.id}" style="display:none;">
+        <div class="dc-cmt-av">${avHtml(user,24)}</div>
+        <input type="text" placeholder="Şərh yazın..." id="cmtIn-${d.id}">
+        <button class="btn small" data-action="submitcmt" data-id="${d.id}">→</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ─── HADISƏ İDARƏSİ ────────────────────────────────────────
+async function handleAction(e){
+  const el = e.currentTarget;
+  const action = el.dataset.action;
+  const id = el.dataset.id;
+  if (action==='share') openShare(id);
+  else if (action==='move') openMoveFolder(id);
+  else if (action==='rename'){
+    const t = prompt('Yeni ad:', el.dataset.title);
+    if (!t||!t.trim()) return;
+    await apiCall(`/gdrive/${id}`,'PATCH',{title:t.trim()});
+    load();
+  }
+  else if (action==='remove'){
+    if (!confirm('Siyahıdan çıxarılsın?')) return;
+    await apiCall(`/gdrive/${id}`,'DELETE');
+    load();
+  }
+  else if (action==='comments') toggleCmts(id);
+  else if (action==='submitcmt') submitCmt(id);
+  else if (action==='editcmt') editCmt(id, el.dataset.cid, el.dataset.text);
+  else if (action==='delcmt'){
+    if (!confirm('Şərh silinsin?')) return;
+    await apiCall(`/gdrive/${id}/comments/${el.dataset.cid}`,'DELETE');
+    loadCmts(id);
+  }
+}
+
+// ─── ŞƏRHLƏR ───────────────────────────────────────────────
+async function toggleCmts(id){
+  const list=document.getElementById(`cmts-${id}`);
+  const form=document.getElementById(`cmtForm-${id}`);
+  const open=list.style.display==='flex';
+  list.style.display=open?'none':'flex';
+  form.style.display=open?'none':'flex';
+  if (!open){ await loadCmts(id); document.getElementById(`cmtIn-${id}`)?.focus(); }
+}
+async function loadCmts(id){
+  const list=document.getElementById(`cmts-${id}`);
+  list.innerHTML='<div style="padding:6px 0;font-size:.78rem;color:var(--text-mute);">Yüklənir...</div>';
+  const cmts=await apiCall(`/gdrive/${id}/comments`);
+  if (!cmts.length){ list.innerHTML='<div style="padding:6px 0;font-size:.78rem;color:var(--text-mute);">Hələ şərh yoxdur</div>'; return; }
+  list.innerHTML=cmts.map(c=>`
+    <div class="dc-cmt-item">
+      <div class="dc-cmt-av">${avHtml(c.employees,24)}</div>
+      <div class="dc-cmt-body">
+        <div class="dc-cmt-name">${c.employees?.full_name||''}</div>
+        <div class="dc-cmt-text" id="ctxt-${c.id}">${escH(c.content)}</div>
+        <div class="dc-cmt-foot">${timeAgo(c.created_at)}
+          ${c.author_id===user.id||user.role==='admin'?`
+            <span class="dc-cmt-action" data-action="editcmt" data-id="${id}" data-cid="${c.id}" data-text="${escA(c.content)}">Redaktə</span>
+            <span class="dc-cmt-action" style="color:var(--red);" data-action="delcmt" data-id="${id}" data-cid="${c.id}">Sil</span>`:''}
+        </div>
+      </div>
+    </div>`).join('');
+  list.querySelectorAll('[data-action]').forEach(el=>el.addEventListener('click',handleAction));
+  list.scrollTop=list.scrollHeight;
+}
+async function submitCmt(id){
+  const input=document.getElementById(`cmtIn-${id}`);
+  const content=input.value.trim();
+  if (!content) return;
+  input.value='';
+  await apiCall(`/gdrive/${id}/comments`,'POST',{content});
+  loadCmts(id);
+}
+function editCmt(id,cid,cur){
+  document.getElementById(`ctxt-${cid}`).innerHTML=`
+    <input type="text" value="${escA(cur)}" id="eCmt-${cid}" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:4px 9px;font-size:.82rem;">
+    <div style="margin-top:3px;display:flex;gap:5px;">
+      <button class="btn small" style="padding:3px 9px;" onclick="saveCmt('${id}','${cid}')">Saxla</button>
+      <button class="btn small secondary" style="padding:3px 9px;" onclick="loadCmts('${id}')">Ləğv et</button>
+    </div>`;
+}
+async function saveCmt(id,cid){
+  const val=document.getElementById(`eCmt-${cid}`)?.value.trim();
+  if (!val) return;
+  await apiCall(`/gdrive/${id}/comments/${cid}`,'PATCH',{content:val});
+  loadCmts(id);
+}
+document.getElementById('docGrid').addEventListener('keydown',e=>{
+  if (e.key==='Enter'&&e.target.id?.startsWith('cmtIn-')) submitCmt(e.target.id.replace('cmtIn-',''));
+});
+
+// ─── PAYLAŞIM ──────────────────────────────────────────────
+function openShare(id){
+  currentShareDocId=id;
+  const doc=allDocs.find(d=>d.id===id);
+  const already=(doc?.shares||[]).map(s=>s.shared_with);
+  document.getElementById('shareErr').textContent='';
+  document.getElementById('shareList').innerHTML=contacts.map(c=>`
+    <label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;cursor:pointer;border:1px solid var(--border);background:var(--card);">
+      <input type="checkbox" value="${c.id}" ${already.includes(c.id)?'checked':''}>
+      <div style="width:30px;height:30px;border-radius:50%;background:var(--grad);color:#fff;font-size:.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">${avHtml(c,30)}</div>
+      <div><div style="font-size:.87rem;font-weight:600;">${escH(c.full_name)}</div><div style="font-size:.73rem;color:var(--text-dim);">${c.position||''}</div></div>
+    </label>`).join('');
+  document.getElementById('shareModal').style.display='flex';
+}
+function closeShare(){ document.getElementById('shareModal').style.display='none'; }
+async function doShare(){
+  const ids=[...document.querySelectorAll('#shareList input:checked')].map(c=>c.value);
+  if (!ids.length){ document.getElementById('shareErr').textContent='Ən azı bir işçi seçin'; return; }
+  try{ await apiCall(`/gdrive/${currentShareDocId}/share`,'POST',{employee_ids:ids}); closeShare(); load(); }
+  catch(e){ document.getElementById('shareErr').textContent=e.message; }
+}
+
+// ─── QOVLUĞA KÖÇÜR ─────────────────────────────────────────
+function openMoveFolder(docId){
+  const doc=allDocs.find(d=>d.id===docId);
+  const list=document.getElementById('folderChoiceList');
+  list.innerHTML=`
+    <button class="folder-chip" style="width:100%;justify-content:flex-start;" onclick="moveDoc('${docId}',null)">📄 Qovluqsuz</button>
+    ${allFolders.map(f=>`<button class="folder-chip ${doc?.folder_id===f.id?'active':''}" style="width:100%;justify-content:flex-start;" onclick="moveDoc('${docId}','${f.id}')">📁 ${escH(f.name)}</button>`).join('')}
+    ${allFolders.length===0?'<div style="font-size:.83rem;color:var(--text-mute);">Hələ qovluq yoxdur. "📁 Qovluq yarat" düyməsindən əlavə edin.</div>':''}
+  `;
+  document.getElementById('moveFolderModal').style.display='flex';
+}
+async function moveDoc(docId, folderId){
+  document.getElementById('moveFolderModal').style.display='none';
+  await apiCall(`/gdrive/${docId}`,'PATCH',{folder_id:folderId});
+  load();
+}
+
+// ─── QOVLUQ CRUD ───────────────────────────────────────────
+async function createFolder(){
+  const name=prompt('Qovluğun adı:');
+  if (!name?.trim()) return;
+  await apiCall('/gdrive/folders','POST',{name:name.trim()});
+  load();
+}
+async function deleteFolder(id){
+  if (!confirm('Qovluq silinsin? (Sənədlər silinməyəcək, sadəcə qovluqsuz olacaq)')) return;
+  await apiCall(`/gdrive/folders/${id}`,'DELETE');
+  if (currentFolder===id) currentFolder=null;
+  load();
+}
+
+// ─── YENİ SƏNƏD ────────────────────────────────────────────
+async function newDoc(type){
+  if (!gdOk()){ alert('Google Drive icazəsi yoxdur. Yenidən daxil olun.'); return; }
+  const dflt={doc:'Yeni Sənəd',sheet:'Yeni Cədvəl',slide:'Yeni Təqdimat',form:'Yeni Form'};
+  const title=prompt(`${NAMES[type]} adı:`,dflt[type]);
+  if (!title?.trim()) return;
+  try {
+    const r=await fetch('https://www.googleapis.com/drive/v3/files',{method:'POST',headers:{'Authorization':`Bearer ${gdToken()}`,'Content-Type':'application/json'},body:JSON.stringify({name:title.trim(),mimeType:MIMES[type]})});
+    if (!r.ok){const e=await r.json();throw new Error(e.error?.message);}
+    const file=await r.json();
+    await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}/permissions`,{method:'POST',headers:{'Authorization':`Bearer ${gdToken()}`,'Content-Type':'application/json'},body:JSON.stringify({role:'writer',type:'anyone'})}).catch(()=>{});
+    const urls={doc:`https://docs.google.com/document/d/${file.id}/edit`,sheet:`https://docs.google.com/spreadsheets/d/${file.id}/edit`,slide:`https://docs.google.com/presentation/d/${file.id}/edit`,form:`https://docs.google.com/forms/d/${file.id}/edit`};
+    await apiCall('/gdrive','POST',{title:title.trim(),url:urls[type],doc_type:type});
+    window.open(urls[type],'_blank');
+    load();
+  } catch(e){alert('Xəta: '+e.message);}
+}
+
+function showAddLink(){ document.getElementById('addForm').reset(); document.getElementById('addModal').style.display='flex'; }
+
+document.getElementById('addForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const errEl=document.getElementById('addErr'); errEl.textContent='';
+  try{
+    await apiCall('/gdrive','POST',{title:document.getElementById('fTitle').value.trim(),url:document.getElementById('fUrl').value.trim(),description:document.getElementById('fDesc').value.trim()});
+    document.getElementById('addModal').style.display='none';
+    load();
+  }catch(err){errEl.textContent=err.message;}
+});
+
+// Drive token-i URL hash-dan götür
+(function(){
+  const hash=new URLSearchParams(location.hash.substring(1));
+  const token=hash.get('access_token');
+  const exp=parseInt(hash.get('expires_in')||'3600');
+  if (token){ localStorage.setItem('gdrive_token',token); localStorage.setItem('gdrive_token_expiry',Date.now()+(exp-60)*1000); history.replaceState(null,'',location.pathname); }
+})();
+
+load();
+</script>
+<script src="/js/chat-widget.js"></script>
+<script src="/js/animate.js"></script>
+</body>
+</html>

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profilim — GDRTI Performans</title>
+<link rel="stylesheet" href="/css/style.css">
+<style>
+.profile-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;max-width:460px;box-shadow:var(--shadow);}
+.photo-area{display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border);}
+.photo-circle{
+  width:110px;height:110px;border-radius:50%;overflow:hidden;
+  background:var(--grad);color:#fff;font-size:2rem;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  border:3px solid #fff;box-shadow:0 0 0 3px var(--indigo);
+  cursor:pointer;position:relative;transition:.2s;
+}
+.photo-circle:hover .photo-overlay{opacity:1;}
+.photo-overlay{
+  position:absolute;inset:0;background:rgba(0,0,0,.45);
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:.8rem;font-weight:700;opacity:0;transition:.2s;
+  border-radius:50%;
+}
+.photo-circle img{width:100%;height:100%;object-fit:cover;}
+.photo-hint{font-size:.78rem;color:var(--text-dim);text-align:center;}
+.save-btn{width:100%;margin-top:6px;position:relative;}
+.save-btn .spinner{display:none;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;margin-right:8px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.save-btn.loading .spinner{display:inline-block;}
+.success-msg{color:var(--green);font-size:.85rem;margin-top:10px;display:none;align-items:center;gap:6px;}
+.error-msg{margin-top:8px;min-height:18px;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar"></div>
+  <div class="main">
+    <div class="topbar">
+      <div><h1>🖼 Profilim</h1><div class="subtitle">Şəklinizi və məlumatlarınızı yeniləyin</div></div>
+    </div>
+
+    <div class="profile-card">
+
+      <!-- Şəkil bölməsi -->
+      <div class="photo-area">
+        <input type="file" id="photoInput" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none;">
+        <div class="photo-circle" id="photoCircle" onclick="document.getElementById('photoInput').click()" title="Şəkli dəyişmək üçün klikləyin">
+          <div class="photo-overlay">📷 Dəyiş</div>
+          <div id="photoInner"></div>
+        </div>
+        <div class="photo-hint">
+          Şəklinizə klikləyin dəyişdirmək üçün<br>
+          <span style="color:var(--text-mute);">JPEG, PNG, WebP · Max 5MB</span>
+        </div>
+        <div id="photoErr" style="color:var(--red);font-size:.8rem;display:none;"></div>
+      </div>
+
+      <!-- Məlumatlar -->
+      <form id="profileForm">
+        <div class="field">
+          <label>Ad Soyad</label>
+          <input type="text" id="fullName" required placeholder="Ad Soyad">
+        </div>
+        <div class="field">
+          <label>Vəzifə</label>
+          <input type="text" id="position" placeholder="Baş mütəxəssis" readonly style="opacity:.6;cursor:not-allowed;" title="Vəzifəni admin dəyişə bilər">
+        </div>
+        <div class="field">
+          <label>Telefon</label>
+          <input type="tel" id="phone" placeholder="+994 XX XXX XX XX">
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="email" readonly style="opacity:.6;cursor:not-allowed;">
+        </div>
+        <button type="submit" class="btn save-btn" id="saveBtn">
+          <span class="spinner"></span>
+          Yadda saxla
+        </button>
+        <div class="error-msg" id="errMsg"></div>
+        <div class="success-msg" id="successMsg">✅ Uğurla yadda saxlanıldı!</div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+// requireAuth-dan istifadəçi məlumatlarını al
+const user = requireAuth();
+
+// Cari şəkil (base64 və ya URL)
+let currentPhoto = user.photo_url || null;
+let photoChanged = false;
+
+// ─── Şəkil render ───────────────────────────────────────────
+function renderPhoto() {
+  const inner = document.getElementById('photoInner');
+  if (currentPhoto) {
+    inner.innerHTML = `<img src="${currentPhoto}" alt="Profil şəkli" style="width:110px;height:110px;object-fit:cover;">`;
+  } else {
+    inner.innerHTML = `<span>${initials(user.full_name)}</span>`;
+  }
+}
+
+// ─── İlkin dəyərləri doldur ────────────────────────────────
+document.getElementById('fullName').value  = user.full_name  || '';
+document.getElementById('phone').value     = user.phone      || '';
+document.getElementById('position').value  = user.position   || '';
+document.getElementById('email').value     = user.email      || '';
+renderPhoto();
+
+// ─── Şəkil seçimi ──────────────────────────────────────────
+document.getElementById('photoInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  const photoErr = document.getElementById('photoErr');
+  photoErr.style.display = 'none';
+
+  if (!file) return;
+
+  // Ölçü yoxlaması
+  if (file.size > 5 * 1024 * 1024) {
+    photoErr.textContent = '⚠️ Fayl 5MB-dan böyükdür. Daha kiçik şəkil seçin.';
+    photoErr.style.display = 'block';
+    this.value = '';
+    return;
+  }
+
+  // Şəkli oxu
+  const reader = new FileReader();
+  reader.onerror = () => {
+    photoErr.textContent = '❌ Fayl oxunmadı. Başqa şəkil sınayın.';
+    photoErr.style.display = 'block';
+  };
+  reader.onload = function(ev) {
+    const img = new Image();
+    img.onerror = () => {
+      photoErr.textContent = '❌ Şəkil yüklənmədi. JPEG, PNG və ya WebP formatında şəkil seçin.';
+      photoErr.style.display = 'block';
+    };
+    img.onload = function() {
+      // Canvas ilə kiçildirik (max 250px, keyfiyyət 0.78)
+      const canvas = document.createElement('canvas');
+      const MAX = 250;
+      let w = img.width, h = img.height;
+      if (w > h) { if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; } }
+      else        { if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; } }
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+
+      try {
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.78);
+        currentPhoto = dataUrl;
+        photoChanged = true;
+        renderPhoto();
+        photoErr.style.display = 'none';
+        // Sürpriz bildiriş
+        document.getElementById('successMsg').style.display = 'none';
+      } catch(err) {
+        photoErr.textContent = '❌ Şəkil emal edilmədi: ' + err.message;
+        photoErr.style.display = 'block';
+      }
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+// ─── Forma submit ───────────────────────────────────────────
+document.getElementById('profileForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  const errEl     = document.getElementById('errMsg');
+  const successEl = document.getElementById('successMsg');
+  const saveBtn   = document.getElementById('saveBtn');
+
+  errEl.textContent = '';
+  successEl.style.display = 'none';
+  saveBtn.classList.add('loading');
+  saveBtn.disabled = true;
+
+  try {
+    const body = {
+      full_name: document.getElementById('fullName').value.trim(),
+      phone:     document.getElementById('phone').value.trim(),
+    };
+    // Şəkli yalnız dəyişilibsə göndər
+    if (photoChanged) {
+      body.photo_url = currentPhoto;
+    }
+
+    const updated = await apiCall('/employees/me', 'PATCH', body);
+
+    // localStorage-dakı user məlumatını yenilə
+    const newUser = {
+      ...user,
+      full_name:  updated.full_name,
+      phone:      updated.phone,
+      photo_url:  updated.photo_url || user.photo_url,
+    };
+    localStorage.setItem('user', JSON.stringify(newUser));
+
+    photoChanged = false;
+    successEl.style.display = 'flex';
+    setTimeout(() => { successEl.style.display = 'none'; }, 3500);
+
+  } catch(err) {
+    errEl.textContent = '❌ ' + (err.message || 'Xəta baş verdi. Yenidən cəhd edin.');
+  } finally {
+    saveBtn.classList.remove('loading');
+    saveBtn.disabled = false;
+  }
+});
+</script>
+<script src="/js/sidebar.js"></script>
+<script src="/js/chat-widget.js"></script>
+<script src="/js/animate.js"></script>
+</body>
+</html>

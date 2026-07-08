@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Məktublar — GDRTI Performans</title>
+<link rel="stylesheet" href="/css/style.css">
+<style>
+.mail-layout{display:grid;grid-template-columns:220px 1fr;gap:0;height:calc(100vh - 120px);background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);}
+.mail-sidebar{border-right:1px solid var(--border);display:flex;flex-direction:column;}
+.mail-tab{padding:13px 16px;cursor:pointer;font-size:.86rem;font-weight:500;color:var(--text-dim);display:flex;align-items:center;gap:8px;transition:.15s;}
+.mail-tab:hover{background:#f6f5ff;}
+.mail-tab.active{background:#f0eefa;color:var(--indigo);font-weight:700;border-left:3px solid var(--indigo);}
+.mail-tab .badge{background:var(--red);color:#fff;border-radius:10px;padding:1px 7px;font-size:.7rem;font-weight:800;margin-left:auto;}
+.mail-list{flex:1;overflow-y:auto;}
+.mail-item{padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:.15s;}
+.mail-item:hover{background:#f6f5ff;}
+.mail-item.active{background:#f0eefa;}
+.mail-item.unread .mail-from{font-weight:800;}
+.mail-from{font-size:.85rem;font-weight:600;color:var(--text);margin-bottom:2px;}
+.mail-subject{font-size:.82rem;color:var(--text);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mail-preview{font-size:.76rem;color:var(--text-mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mail-date{font-size:.7rem;color:var(--text-mute);float:right;margin-top:2px;}
+.mail-content{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.mail-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-mute);}
+.mail-view{flex:1;overflow-y:auto;padding:24px;}
+.mv-subject{font-size:1.3rem;font-weight:800;color:var(--text);margin-bottom:10px;}
+.mv-meta{background:#f8f8fd;border-radius:10px;padding:12px 16px;margin-bottom:18px;font-size:.83rem;display:flex;flex-direction:column;gap:4px;}
+.mv-meta span{color:var(--text-dim);}
+.mv-meta b{color:var(--text);}
+.mv-body{font-size:.92rem;line-height:1.7;color:var(--text);white-space:pre-wrap;}
+.mv-attach{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#f0eefa;border-radius:10px;margin-top:16px;border:1px solid #d8d0f5;}
+.compose-overlay{position:fixed;bottom:24px;right:320px;width:560px;background:var(--card);border-radius:16px;box-shadow:0 16px 60px rgba(30,20,80,.25);border:1px solid var(--border);z-index:200;display:none;flex-direction:column;}
+.compose-header{background:var(--grad);color:#fff;padding:14px 18px;border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center;font-weight:700;}
+.compose-header button{background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:8px;padding:5px 12px;cursor:pointer;font-family:inherit;}
+.compose-body{padding:16px;display:flex;flex-direction:column;gap:10px;}
+.email-field{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
+.email-field label{font-size:.8rem;color:var(--text-mute);font-weight:700;min-width:50px;padding-top:4px;}
+.email-chips{display:flex;flex-wrap:wrap;gap:4px;flex:1;align-items:center;min-height:28px;}
+.email-chip{background:#f0eefa;color:var(--indigo);border-radius:14px;padding:3px 10px;font-size:.78rem;font-weight:600;display:flex;align-items:center;gap:5px;}
+.email-chip .rm{cursor:pointer;opacity:.6;font-size:.75rem;}
+.email-chip .rm:hover{opacity:1;}
+.recipient-dropdown{position:relative;flex:1;}
+.recipient-input{border:none;outline:none;font-size:.85rem;color:var(--text);background:transparent;font-family:inherit;min-width:120px;width:100%;}
+.recipient-suggestions{position:absolute;top:100%;left:0;right:0;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);z-index:10;max-height:180px;overflow-y:auto;display:none;}
+.rs-item{padding:9px 14px;cursor:pointer;font-size:.85rem;display:flex;align-items:center;gap:8px;}
+.rs-item:hover{background:#f0eefa;}
+.compose-subject{border:none;outline:none;font-size:.9rem;font-weight:600;color:var(--text);padding:8px 0;border-bottom:1px solid var(--border);font-family:inherit;width:100%;}
+.compose-body-text{border:none;outline:none;font-size:.88rem;color:var(--text);font-family:inherit;resize:none;min-height:160px;line-height:1.6;}
+.compose-actions{display:flex;gap:10px;padding:10px 16px;border-top:1px solid var(--border);background:#fafafa;border-radius:0 0 16px 16px;}
+/* Şərhler */
+.cmt-section{margin-top:24px;border-top:1px solid var(--border);padding-top:16px;}
+.cmt-item{display:flex;gap:10px;margin-bottom:12px;}
+.cmt-av{width:30px;height:30px;border-radius:50%;background:var(--grad);color:#fff;font-size:.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;}
+.cmt-body{flex:1;background:#f8f8fd;border-radius:10px;padding:8px 12px;}
+.cmt-name{font-size:.78rem;font-weight:700;}
+.cmt-text{font-size:.84rem;margin-top:2px;}
+.cmt-foot{font-size:.7rem;color:var(--text-mute);margin-top:4px;display:flex;gap:10px;}
+.cmt-action{color:var(--indigo);cursor:pointer;}
+.cmt-form{display:flex;gap:8px;margin-top:10px;}
+.cmt-form input{flex:1;border:1px solid var(--border);border-radius:20px;padding:8px 14px;font-size:.84rem;outline:none;font-family:inherit;}
+.cmt-form input:focus{border-color:var(--indigo);}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar"></div>
+  <div class="main" style="padding:0;overflow:hidden;">
+    <div style="padding:16px 24px 10px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+      <div><h1 style="margin:0;">✉️ Məktublar</h1><div class="subtitle">Rəsmi yazışmalar</div></div>
+      <button class="btn small" onclick="openCompose()">✏️ Yeni məktub</button>
+    </div>
+
+    <div class="mail-layout" style="margin:0 16px 16px;">
+      <!-- Sol panel -->
+      <div class="mail-sidebar">
+        <div class="mail-tab active" id="tabIn" onclick="switchTab('inbox')">📥 Gələnlər <span class="badge" id="unreadBadge" style="display:none;">0</span></div>
+        <div class="mail-tab" id="tabSent" onclick="switchTab('sent')">📤 Göndərilənlər</div>
+        <div class="mail-list" id="mailList"></div>
+      </div>
+      <!-- Məzmun -->
+      <div class="mail-content" id="mailContent">
+        <div class="mail-empty"><div style="font-size:2.5rem;margin-bottom:10px;">📭</div><div>Məktub seçin</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Compose overlay (Gmail stili) -->
+<div class="compose-overlay" id="composeOverlay">
+  <div class="compose-header">
+    <span>✏️ Yeni məktub</span>
+    <button onclick="closeCompose()">✕</button>
+  </div>
+  <div class="compose-body">
+    <!-- Kimə -->
+    <div class="email-field">
+      <label>Kimə</label>
+      <div style="flex:1;">
+        <div class="email-chips" id="toChips"></div>
+        <div class="recipient-dropdown">
+          <input class="recipient-input" id="toInput" placeholder="ad@gmail.com" autocomplete="off" oninput="showSuggestions('to',this.value)" onkeydown="handleKey(event,'to')">
+          <div class="recipient-suggestions" id="toSugg"></div>
+        </div>
+      </div>
+    </div>
+    <!-- CC -->
+    <div class="email-field">
+      <label>CC</label>
+      <div style="flex:1;">
+        <div class="email-chips" id="ccChips"></div>
+        <div class="recipient-dropdown">
+          <input class="recipient-input" id="ccInput" placeholder="Karbonkopya..." autocomplete="off" oninput="showSuggestions('cc',this.value)" onkeydown="handleKey(event,'cc')">
+          <div class="recipient-suggestions" id="ccSugg"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Mövzu -->
+    <input class="compose-subject" id="compSubject" placeholder="Mövzu">
+    <!-- Mətn -->
+    <textarea class="compose-body-text" id="compBody" placeholder="Rəsmi məktubun mətni..."></textarea>
+    <!-- Fayl -->
+    <div style="font-size:.8rem;color:var(--text-dim);">
+      <input type="file" id="compFile" accept=".pdf,.doc,.docx,image/*" style="display:none;">
+      <span style="cursor:pointer;color:var(--indigo);font-weight:600;" onclick="document.getElementById('compFile').click()">📎 Fayl əlavə et</span>
+      <span id="compFileInfo" style="margin-left:8px;"></span>
+    </div>
+  </div>
+  <div class="compose-actions">
+    <button class="btn" onclick="sendMail()">📨 Göndər</button>
+    <button class="btn secondary" onclick="closeCompose()">Ləğv et</button>
+    <div class="error-msg" id="compErr"></div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+const user = requireAuth();
+
+let allContacts=[], letters=[], currentTab='inbox', currentLetter=null;
+let toRecipients=[], ccRecipients=[];
+let compAttachment=null;
+
+async function init(){
+  try{ allContacts = await apiCall('/employees/contacts'); }catch(e){}
+  await loadLetters();
+}
+
+async function loadLetters(){
+  try{
+    letters = currentTab==='inbox' ? await apiCall('/letters/mine') : await apiCall('/letters/sent');
+    renderList();
+    if (currentTab==='inbox'){
+      const unread = letters.filter(l=>!l.is_read).length;
+      const badge = document.getElementById('unreadBadge');
+      badge.style.display = unread>0?'inline':'none';
+      badge.textContent = unread;
+    }
+  }catch(e){}
+}
+
+function switchTab(tab){
+  currentTab=tab;
+  currentLetter=null;
+  document.getElementById('tabIn').classList.toggle('active',tab==='inbox');
+  document.getElementById('tabSent').classList.toggle('active',tab==='sent');
+  document.getElementById('mailContent').innerHTML='<div class="mail-empty"><div style="font-size:2.5rem;margin-bottom:10px;">📭</div><div>Məktub seçin</div></div>';
+  loadLetters();
+}
+
+function renderList(){
+  const el=document.getElementById('mailList');
+  el.innerHTML=letters.map(l=>`
+    <div class="mail-item ${l.id===currentLetter?.id?'active':''} ${!l.is_read&&currentTab==='inbox'?'unread':''}" onclick="openLetter('${l.id}')">
+      <div class="mail-date">${timeAgo(l.created_at)}</div>
+      <div class="mail-from">${currentTab==='inbox'?'Göndərən':'Alıcı'}</div>
+      <div class="mail-subject">${l.subject}</div>
+      <div class="mail-preview">${(l.body||'').slice(0,60)}</div>
+    </div>`).join('') || '<div style="padding:24px;text-align:center;color:var(--text-mute);font-size:.85rem;">Məktub yoxdur</div>';
+}
+
+async function openLetter(id){
+  const l=letters.find(x=>x.id===id);
+  if (!l) return;
+  currentLetter=l;
+  if (!l.is_read && currentTab==='inbox'){
+    apiCall(`/letters/${id}/read`,'PATCH').catch(()=>{});
+    l.is_read=true;
+    renderList();
+  }
+
+  // Full məktub (fayl üçün)
+  let full=l;
+  try{ full=await apiCall(`/letters/${id}`); }catch(e){}
+
+  // Şərhlər
+  let cmts=[];
+  try{ cmts=await apiCall(`/letters/${id}/comments`); }catch(e){}
+
+  const cc=(full.cc_recipients||[]).map(id=>{const c=allContacts.find(x=>x.id===id);return c?.full_name||id;}).join(', ');
+
+  document.getElementById('mailContent').innerHTML=`
+    <div class="mail-view">
+      <div class="mv-subject">${full.subject}</div>
+      <div class="mv-meta">
+        <div><span>Kimə: </span><b>${full.recipient_id?(allContacts.find(x=>x.id===full.recipient_id)?.full_name||''):(full.sector_id?'Bütün sektor':'')}</b></div>
+        ${cc?`<div><span>CC: </span><b>${cc}</b></div>`:''}
+        <div><span>Tarix: </span><b>${new Date(full.created_at).toLocaleString('az-AZ')}</b></div>
+        ${full.attachment_name?`<div><span>Əlavə: </span><b>${full.attachment_name}</b></div>`:''}
+      </div>
+      <div class="mv-body">${full.body||''}</div>
+      ${full.attachment_name?`<div class="mv-attach">📎 <b>${full.attachment_name}</b> <button class="btn small" onclick="downloadAttach()">⬇️ Endir</button></div>`:''}
+
+      <div class="cmt-section">
+        <div style="font-weight:700;font-size:.9rem;margin-bottom:10px;">💬 Şərhlər (${cmts.length})</div>
+        <div id="cmtList">
+          ${cmts.map(c=>`
+            <div class="cmt-item">
+              <div class="cmt-av">${c.employees?.photo_url?`<img src="${c.employees.photo_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`:'?'}</div>
+              <div class="cmt-body">
+                <div class="cmt-name">${c.employees?.full_name||''}</div>
+                <div class="cmt-text" id="ct-${c.id}">${c.content}</div>
+                <div class="cmt-foot">${timeAgo(c.created_at)}
+                  ${c.author_id===user.id||user.role==='admin'?`<span class="cmt-action" onclick="editCmt('${id}','${c.id}','${c.content.replace(/'/g,"\\'")}')">Redaktə</span><span class="cmt-action" style="color:var(--red);" onclick="delCmt('${id}','${c.id}')">Sil</span>`:''}
+                </div>
+              </div>
+            </div>`).join('') || '<div style="font-size:.83rem;color:var(--text-mute);">Hələ şərh yoxdur</div>'}
+        </div>
+        <div class="cmt-form">
+          <div class="cmt-av">${user.photo_url?`<img src="${user.photo_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`:initials(user.full_name)}</div>
+          <input type="text" id="cmtInput" placeholder="Şərh yazın..." onkeydown="if(event.key==='Enter')addCmt('${id}')">
+          <button class="btn small" onclick="addCmt('${id}')">→</button>
+        </div>
+      </div>
+    </div>`;
+
+  // Fayl endirmə
+  window.downloadAttach = async () => {
+    try{const r=await apiCall(`/letters/${id}`);const a=document.createElement('a');a.href=`data:${r.attachment_type};base64,${r.attachment_data}`;a.download=r.attachment_name;a.click();}catch(e){alert(e.message);}
+  };
+}
+
+async function addCmt(letterId){
+  const input=document.getElementById('cmtInput');
+  const content=input.value.trim();
+  if (!content) return;
+  input.value='';
+  await apiCall(`/letters/${letterId}/comments`,'POST',{content});
+  openLetter(letterId);
+}
+async function editCmt(lid,cid,cur){
+  document.getElementById(`ct-${cid}`).innerHTML=`<input type="text" value="${cur.replace(/"/g,'&quot;')}" id="ec-${cid}" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:4px 9px;font-size:.83rem;"><div style="margin-top:3px;display:flex;gap:5px;"><button class="btn small" style="padding:3px 9px;" onclick="saveCmt('${lid}','${cid}')">Saxla</button><button class="btn small secondary" style="padding:3px 9px;" onclick="openLetter('${lid}')">Ləğv et</button></div>`;
+}
+async function saveCmt(lid,cid){const val=document.getElementById(`ec-${cid}`)?.value.trim();if (!val)return;await apiCall(`/letters/${lid}/comments/${cid}`,'PATCH',{content:val});openLetter(lid);}
+async function delCmt(lid,cid){if (!confirm('Silinsin?'))return;await apiCall(`/letters/${lid}/comments/${cid}`,'DELETE');openLetter(lid);}
+
+// ─── COMPOSE (Gmail stili) ──────────────────────────────────
+function openCompose(){
+  toRecipients=[]; ccRecipients=[]; compAttachment=null;
+  document.getElementById('toChips').innerHTML='';
+  document.getElementById('ccChips').innerHTML='';
+  document.getElementById('compSubject').value='';
+  document.getElementById('compBody').value='';
+  document.getElementById('compFileInfo').textContent='';
+  document.getElementById('compErr').textContent='';
+  document.getElementById('composeOverlay').style.display='flex';
+  document.getElementById('toInput').focus();
+}
+function closeCompose(){ document.getElementById('composeOverlay').style.display='none'; }
+
+function showSuggestions(type, val){
+  const suggEl=document.getElementById(`${type}Sugg`);
+  if (!val.trim()){ suggEl.style.display='none'; return; }
+  const existing=(type==='to'?toRecipients:ccRecipients).map(r=>r.id);
+  const matches=allContacts.filter(c=>!existing.includes(c.id)&&(c.full_name.toLowerCase().includes(val.toLowerCase())||c.email.toLowerCase().includes(val.toLowerCase()))).slice(0,6);
+  if (!matches.length){ suggEl.style.display='none'; return; }
+  suggEl.innerHTML=matches.map(c=>`<div class="rs-item" onclick="addRecipient('${type}','${c.id}','${c.full_name.replace(/'/g,"\\'")}')">
+    <div style="width:26px;height:26px;border-radius:50%;background:var(--grad);color:#fff;font-size:.6rem;font-weight:700;display:flex;align-items:center;justify-content:center;">${initials(c.full_name)}</div>
+    <div><div style="font-size:.85rem;font-weight:600;">${c.full_name}</div><div style="font-size:.74rem;color:var(--text-dim);">${c.email}</div></div>
+  </div>`).join('');
+  suggEl.style.display='block';
+}
+
+function addRecipient(type, id, name){
+  const arr=type==='to'?toRecipients:ccRecipients;
+  if (arr.find(r=>r.id===id)) return;
+  arr.push({id,name});
+  const chipsEl=document.getElementById(`${type}Chips`);
+  const chip=document.createElement('span');
+  chip.className='email-chip';
+  chip.innerHTML=`${name} <span class="rm" onclick="removeRecipient('${type}','${id}',this.parentElement)">✕</span>`;
+  chipsEl.appendChild(chip);
+  document.getElementById(`${type}Input`).value='';
+  document.getElementById(`${type}Sugg`).style.display='none';
+}
+
+function removeRecipient(type, id, el){
+  const arr=type==='to'?toRecipients:ccRecipients;
+  const i=arr.findIndex(r=>r.id===id);
+  if (i>=0) arr.splice(i,1);
+  el.remove();
+}
+
+function handleKey(e, type){
+  if (e.key==='Escape') document.getElementById(`${type}Sugg`).style.display='none';
+}
+
+document.getElementById('compFile').addEventListener('change',e=>{
+  const f=e.target.files[0]; if (!f) return;
+  if (f.size>5*1024*1024){ alert('Fayl 5MB-dan böyükdür'); e.target.value=''; return; }
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    compAttachment={name:f.name,type:f.type,data:ev.target.result.split(',')[1]};
+    document.getElementById('compFileInfo').textContent=`✅ ${f.name}`;
+  };
+  reader.readAsDataURL(f);
+});
+
+async function sendMail(){
+  const errEl=document.getElementById('compErr');
+  errEl.textContent='';
+  if (!toRecipients.length){ errEl.textContent='Alıcı seçin'; return; }
+  const subject=document.getElementById('compSubject').value.trim();
+  const body=document.getElementById('compBody').value.trim();
+  if (!subject) { errEl.textContent='Mövzu yazın'; return; }
+  if (!body) { errEl.textContent='Mətn yazın'; return; }
+  try{
+    await apiCall('/letters','POST',{
+      recipient_id: toRecipients[0].id,
+      cc_recipients: ccRecipients.map(r=>r.id),
+      subject, body,
+      attachment_name: compAttachment?.name||null,
+      attachment_type: compAttachment?.type||null,
+      attachment_data: compAttachment?.data||null
+    });
+    closeCompose();
+    switchTab('sent');
+  }catch(e){ errEl.textContent=e.message; }
+}
+
+// Xaricdəki klik ilə suggestions bağla
+document.addEventListener('click',e=>{
+  if (!e.target.closest('.recipient-dropdown')){
+    document.querySelectorAll('.recipient-suggestions').forEach(s=>s.style.display='none');
+  }
+});
+
+init();
+</script>
+<script src="/js/sidebar.js"></script>
+<script src="/js/chat-widget.js"></script>
+<script src="/js/animate.js"></script>
+</body>
+</html>

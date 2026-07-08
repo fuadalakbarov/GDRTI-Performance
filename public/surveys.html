@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sorğular — GDRTI Performans</title>
+<link rel="stylesheet" href="/css/style.css">
+<style>
+.sv-list{display:flex;flex-direction:column;gap:12px;}
+.sv-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;box-shadow:var(--shadow);transition:.2s;}
+.sv-card:hover{border-color:var(--indigo);}
+.sv-card h3{font-size:.95rem;font-weight:700;margin-bottom:4px;}
+.sv-card .meta{font-size:.76rem;color:var(--text-dim);margin-bottom:10px;}
+.sv-card .actions{display:flex;gap:8px;}
+.q-block{background:#f8f8fd;border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;}
+.q-block .q-text{font-size:.9rem;font-weight:600;margin-bottom:8px;}
+.rating-stars{display:flex;gap:4px;}
+.rating-stars label{font-size:1.4rem;cursor:pointer;opacity:.4;transition:.15s;}
+.rating-stars input{display:none;}
+.rating-stars input:checked ~ label,.rating-stars label:hover,.rating-stars label:hover ~ label{opacity:1;}
+.builder-q{background:#f8f8fd;border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;position:relative;}
+.result-bar-wrap{background:#eef0fb;border-radius:6px;height:10px;overflow:hidden;flex:1;}
+.result-bar{height:100%;border-radius:6px;background:var(--grad);}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar"></div>
+  <div class="main">
+    <div class="topbar">
+      <div><h1>🗳 Sorğular</h1><div class="subtitle">Daxili rəy toplama sistemi</div></div>
+      <button class="btn small" id="createBtn" style="display:none;" onclick="showBuilder()">+ Yeni sorğu</button>
+    </div>
+
+    <div id="listView">
+      <div class="sv-list" id="svList"><div class="empty-state">Yüklənir...</div></div>
+    </div>
+
+    <div id="surveyView" style="display:none;">
+      <button class="btn small secondary" style="margin-bottom:16px;" onclick="backToList()">← Geri</button>
+      <div id="surveyContent"></div>
+    </div>
+
+    <div id="builderView" style="display:none;">
+      <button class="btn small secondary" style="margin-bottom:16px;" onclick="backToList()">← Geri</button>
+      <div class="card">
+        <h2 style="margin-bottom:16px;">📝 Yeni sorğu yarat</h2>
+        <div class="field"><label>Sorğunun adı</label><input type="text" id="bTitle" required placeholder="məs. İşçi məmnuniyyəti sorğusu"></div>
+        <div class="field"><label>Təsvir</label><textarea id="bDesc" rows="2"></textarea></div>
+        <div class="field"><label>Son tarix (istəyə görə)</label><input type="date" id="bExpiry"></div>
+        <h3 style="margin:16px 0 10px; font-size:.92rem;">Suallar</h3>
+        <div id="questionsList"></div>
+        <div style="display:flex;gap:8px;margin-bottom:16px;">
+          <button class="btn small secondary" onclick="addQ('text')">+ Mətn</button>
+          <button class="btn small secondary" onclick="addQ('rating')">+ Reytinq (1-5)</button>
+          <button class="btn small secondary" onclick="addQ('choice')">+ Seçim</button>
+        </div>
+        <button class="btn" onclick="createSurvey()">Sorğu yarat və göndər</button>
+        <div class="error-msg" id="bErr"></div>
+      </div>
+    </div>
+
+    <div id="resultsView" style="display:none;">
+      <button class="btn small secondary" style="margin-bottom:16px;" onclick="backToList()">← Geri</button>
+      <div id="resultsContent"></div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/sidebar.js"></script>
+<script>
+const user = requireAuth();
+if (['admin','director','deputy'].includes(user.role)) document.getElementById('createBtn').style.display = 'inline-flex';
+
+let questions = []; // builder üçün
+
+async function loadList(){
+  try {
+    const surveys = await apiCall('/surveys');
+    document.getElementById('svList').innerHTML = surveys.map(s => `
+      <div class="sv-card">
+        <h3>${s.title}</h3>
+        <div class="meta">${s.employees?.full_name||''} · ${new Date(s.created_at).toLocaleDateString('az-AZ')} · ${s.response_count} cavab</div>
+        <div class="actions">
+          ${!s.i_responded ? `<button class="btn small" onclick="openSurvey('${s.id}')">Cavabla</button>` : '<span style="color:var(--green);font-size:.82rem;">✅ Cavablandınız</span>'}
+          ${user.role==='admin' ? `<button class="btn small secondary" onclick="showResults('${s.id}')">Nəticələr</button>` : ''}
+          ${user.role==='admin' ? `<button class="btn small secondary" style="color:var(--red);" onclick="deleteSurvey('${s.id}')">🗑</button>` : ''}
+        </div>
+      </div>`).join('') || '<div class="empty-state">Hələ sorğu yoxdur</div>';
+  } catch(e){}
+}
+
+function showView(id){ ['listView','surveyView','builderView','resultsView'].forEach(v => document.getElementById(v).style.display = v===id?'block':'none'); }
+function backToList(){ showView('listView'); loadList(); }
+function showBuilder(){ questions=[]; document.getElementById('questionsList').innerHTML=''; showView('builderView'); }
+
+let qCount = 0;
+function addQ(type){
+  const id = ++qCount;
+  questions.push({ id, type, question:'', options:[] });
+  const el = document.createElement('div');
+  el.className = 'builder-q';
+  el.id = `bq-${id}`;
+  el.innerHTML = `
+    <input type="text" placeholder="${type==='text'?'Mətn sualı...':type==='rating'?'Reytinq sualı...':'Seçim sualı...'}" id="bqText-${id}" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:inherit;font-size:.88rem;margin-bottom:8px;">
+    ${type==='choice'?`<input type="text" placeholder="Seçimlər: seçim1, seçim2, seçim3" id="bqOpts-${id}" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:inherit;font-size:.84rem;">` : ''}
+    <div style="font-size:.74rem;color:var(--text-mute);margin-top:4px;">${type==='text'?'📝 Açıq mətn':type==='rating'?'⭐ 1-5 reytinq':'🔘 Çoxdan seç'}</div>
+    <button onclick="removeQ(${id})" style="position:absolute;top:10px;right:10px;background:none;border:none;color:var(--text-mute);cursor:pointer;font-size:.9rem;">✕</button>
+  `;
+  document.getElementById('questionsList').appendChild(el);
+}
+
+function removeQ(id){
+  questions = questions.filter(q=>q.id!==id);
+  document.getElementById(`bq-${id}`)?.remove();
+}
+
+async function createSurvey(){
+  const title = document.getElementById('bTitle').value.trim();
+  if (!title){ alert('Başlıq lazımdır'); return; }
+  const qs = questions.map(q => ({
+    question: document.getElementById(`bqText-${q.id}`)?.value.trim()||'',
+    type: q.type,
+    options: q.type==='choice' ? (document.getElementById(`bqOpts-${q.id}`)?.value||'').split(',').map(s=>s.trim()).filter(Boolean) : null
+  })).filter(q=>q.question);
+  if (!qs.length){ alert('Ən azı 1 sual lazımdır'); return; }
+  try {
+    await apiCall('/surveys','POST',{ title, description: document.getElementById('bDesc').value, questions: qs, expires_at: document.getElementById('bExpiry').value||null });
+    backToList();
+  } catch(e){ document.getElementById('bErr').textContent=e.message; }
+}
+
+async function openSurvey(id){
+  const s = await apiCall(`/surveys/${id}`);
+  const answers = {};
+  document.getElementById('surveyContent').innerHTML = `
+    <div class="card">
+      <h2 style="margin-bottom:6px;">${s.title}</h2>
+      ${s.description ? `<p style="color:var(--text-dim);font-size:.88rem;margin-bottom:16px;">${s.description}</p>` : ''}
+      ${(s.questions||[]).map((q,i) => `
+        <div class="q-block">
+          <div class="q-text">${i+1}. ${q.question}</div>
+          ${q.type==='text' ? `<textarea id="ans-${q.id}" rows="3" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px;font-family:inherit;font-size:.88rem;resize:vertical;" placeholder="Cavabınızı yazın..."></textarea>` : ''}
+          ${q.type==='rating' ? `
+            <div class="rating-stars" style="flex-direction:row-reverse;">
+              ${[5,4,3,2,1].map(n=>`<input type="radio" name="rating-${q.id}" id="r${q.id}-${n}" value="${n}"><label for="r${q.id}-${n}">★</label>`).join('')}
+            </div>` : ''}
+          ${q.type==='choice' ? (q.options||[]).map((opt,oi)=>`<label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;cursor:pointer;font-size:.88rem;"><input type="radio" name="choice-${q.id}" value="${opt}"> ${opt}</label>`).join('') : ''}
+        </div>`).join('')}
+      <button class="btn" onclick="submitSurvey('${id}',${JSON.stringify((s.questions||[]).map(q=>({id:q.id,type:q.type}))).replace(/"/g,'&quot;')})">Göndər</button>
+    </div>`;
+  showView('surveyView');
+}
+
+async function submitSurvey(surveyId, qMeta){
+  const answers = {};
+  qMeta.forEach(q => {
+    if (q.type==='text') answers[q.id] = document.getElementById(`ans-${q.id}`)?.value||'';
+    else if (q.type==='rating') answers[q.id] = document.querySelector(`[name="rating-${q.id}"]:checked`)?.value||'';
+    else if (q.type==='choice') answers[q.id] = document.querySelector(`[name="choice-${q.id}"]:checked`)?.value||'';
+  });
+  try { await apiCall(`/surveys/${surveyId}/respond`,'POST',{answers}); alert('✅ Cavabınız göndərildi!'); backToList(); }
+  catch(e){ alert(e.message); }
+}
+
+async function showResults(id){
+  const res = await apiCall(`/surveys/${id}/results`);
+  let html = `<div class="card"><h2 style="margin-bottom:20px;">📊 Nəticələr (${res.responses.length} cavab)</h2>`;
+  res.questions.forEach(q => {
+    html += `<div style="margin-bottom:20px;"><b style="font-size:.9rem;">${q.question}</b><br>`;
+    const qAnswers = res.responses.map(r => r.answers[q.id]).filter(Boolean);
+    if (q.type==='text'){
+      html += `<div style="margin-top:8px;display:flex;flex-direction:column;gap:6px;">${qAnswers.map(a=>`<div style="background:#f8f8fd;border-radius:8px;padding:8px 12px;font-size:.86rem;">"${a}"</div>`).join('')}</div>`;
+    } else if (q.type==='rating'){
+      const avg = qAnswers.length ? (qAnswers.reduce((s,a)=>s+parseInt(a),0)/qAnswers.length).toFixed(1) : '-';
+      html += `<div style="margin-top:8px;font-size:1.5rem;">⭐ ${avg} <span style="font-size:.84rem;color:var(--text-dim);">(${qAnswers.length} cavab)</span></div>`;
+    } else if (q.type==='choice'){
+      const counts = {};
+      qAnswers.forEach(a => counts[a]=(counts[a]||0)+1);
+      html += `<div style="margin-top:8px;display:flex;flex-direction:column;gap:6px;">${Object.entries(counts).map(([opt,cnt])=>`
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="min-width:100px;font-size:.84rem;">${opt}</span>
+          <div class="result-bar-wrap"><div class="result-bar" style="width:${Math.round(cnt/qAnswers.length*100)}%"></div></div>
+          <span style="font-size:.8rem;color:var(--text-dim);">${cnt} (${Math.round(cnt/qAnswers.length*100)}%)</span>
+        </div>`).join('')}</div>`;
+    }
+    html += '</div>';
+  });
+  html += '</div>';
+  document.getElementById('resultsContent').innerHTML = html;
+  showView('resultsView');
+}
+
+async function deleteSurvey(id){ if(!confirm('Silinsin?'))return; await apiCall(`/surveys/${id}`,'DELETE'); loadList(); }
+
+loadList();
+</script>
+<script src="/js/chat-widget.js"></script>
+<script src="/js/animate.js"></script>
+</body>
+</html>

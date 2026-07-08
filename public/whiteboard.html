@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>İş Lenti — GDRTI</title>
+<link rel="stylesheet" href="/css/style.css">
+<style>
+.main{padding:0;overflow-y:auto;background:#f0f2f5;}
+
+/* Post qutusu */
+.post-box{background:#fff;border-radius:14px;padding:14px 16px;box-shadow:0 2px 12px rgba(0,0,0,.07);margin-bottom:14px;}
+.post-box-top{display:flex;gap:10px;align-items:flex-start;}
+.post-av{width:40px;height:40px;border-radius:50%;background:var(--grad);color:#fff;font-size:.78rem;font-weight:700;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;}
+.post-av img{width:100%;height:100%;object-fit:cover;}
+.post-input-wrap{flex:1;position:relative;}
+.post-input{width:100%;min-height:56px;max-height:200px;background:#f0f2f5;border:none;border-radius:22px;padding:11px 16px;font-size:.9rem;font-family:inherit;outline:none;resize:none;color:var(--text);line-height:1.5;box-sizing:border-box;transition:.15s;}
+.post-input:focus{background:#e8eaf0;min-height:90px;}
+.post-input::placeholder{color:#9ca3af;}
+.post-type-btns{display:flex;gap:4px;margin-top:10px;padding-top:10px;border-top:1px solid #f0f0f8;}
+.ptb{flex:1;background:none;border:none;cursor:pointer;padding:8px;border-radius:10px;font-size:.82rem;font-family:inherit;color:var(--text-dim);font-weight:600;display:flex;align-items:center;justify-content:center;gap:5px;transition:.15s;}
+.ptb:hover{background:#f0f2f5;color:var(--text);}
+.post-submit-row{display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
+.tag-suggest{position:absolute;top:100%;left:0;right:0;background:#fff;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);z-index:50;max-height:180px;overflow-y:auto;border:1px solid var(--border);display:none;}
+.tag-suggest.show{display:block;}
+.tag-item{padding:8px 14px;cursor:pointer;display:flex;gap:8px;align-items:center;font-size:.85rem;transition:.1s;}
+.tag-item:hover{background:#f5f6ff;}
+.tag-av{width:28px;height:28px;border-radius:50%;background:var(--grad);color:#fff;font-size:.6rem;font-weight:700;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;}
+.tag-av img{width:100%;height:100%;object-fit:cover;}
+
+/* Post kartı */
+.post-card{background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.07);margin-bottom:12px;overflow:hidden;animation:fadeInUp .3s ease;}
+.pc-head{display:flex;align-items:flex-start;gap:10px;padding:14px 16px 10px;}
+.pc-info .pc-name{font-weight:700;font-size:.9rem;color:var(--text);}
+.pc-info .pc-meta{font-size:.74rem;color:var(--text-mute);margin-top:1px;}
+.pc-del{margin-left:auto;background:none;border:none;color:var(--text-mute);cursor:pointer;font-size:.9rem;padding:5px 9px;border-radius:8px;transition:.15s;}
+.pc-del:hover{background:#fee2e2;color:var(--red);}
+.pc-text{padding:0 16px 12px;font-size:.92rem;color:var(--text);line-height:1.65;white-space:pre-wrap;word-break:break-word;}
+.pc-text .mention{color:var(--indigo);font-weight:700;cursor:pointer;}
+.pc-img{width:100%;max-height:400px;object-fit:cover;display:block;}
+.pc-react-bar{display:flex;align-items:center;gap:4px;padding:8px 12px;border-top:1px solid #f0f0f8;border-bottom:1px solid #f0f0f8;flex-wrap:wrap;}
+.react-btn{background:none;border:none;cursor:pointer;border-radius:20px;padding:5px 10px;font-size:.88rem;display:flex;align-items:center;gap:4px;font-family:inherit;color:var(--text-dim);transition:.15s;font-weight:500;}
+.react-btn:hover{background:#f0f2f5;transform:scale(1.08);}
+.react-btn.active{color:var(--indigo);background:#f0eefa;font-weight:800;}
+.react-total{margin-left:auto;font-size:.76rem;color:var(--text-mute);}
+.pc-foot{display:flex;padding:4px 8px;}
+.pc-foot-btn{flex:1;background:none;border:none;cursor:pointer;padding:8px;border-radius:10px;font-size:.84rem;font-family:inherit;color:var(--text-dim);font-weight:600;display:flex;align-items:center;justify-content:center;gap:5px;transition:.15s;}
+.pc-foot-btn:hover{background:#f0f2f5;}
+.cmts-wrap{padding:8px 16px 12px;display:flex;flex-direction:column;gap:8px;}
+.cmt-row{display:flex;gap:8px;animation:fadeInUp .2s ease;}
+.cmt-av{width:30px;height:30px;border-radius:50%;background:var(--grad);color:#fff;font-size:.62rem;font-weight:700;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;}
+.cmt-av img{width:100%;height:100%;object-fit:cover;}
+.cmt-bubble{flex:1;background:#f0f2f5;border-radius:0 14px 14px 14px;padding:8px 12px;}
+.cmt-name{font-size:.78rem;font-weight:700;color:var(--text);}
+.cmt-text{font-size:.86rem;color:var(--text);line-height:1.45;white-space:pre-wrap;}
+.cmt-foot{font-size:.7rem;color:var(--text-mute);margin-top:3px;display:flex;gap:10px;}
+.cmt-del{cursor:pointer;color:var(--red);}
+.cmt-input-row{display:flex;gap:8px;align-items:center;padding:8px 0 0;}
+.cmt-input{flex:1;background:#f0f2f5;border:none;border-radius:20px;padding:8px 14px;font-size:.86rem;outline:none;font-family:inherit;transition:.15s;}
+.cmt-input:focus{background:#e8eaf0;}
+.cmt-send{background:var(--grad);color:#fff;border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:.85rem;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:.15s;}
+.cmt-send:hover{transform:scale(1.08);}
+.load-more{display:block;width:100%;background:none;border:1px solid var(--border);border-radius:10px;padding:10px;font-family:inherit;font-size:.85rem;color:var(--text-dim);cursor:pointer;margin-top:6px;transition:.15s;}
+.load-more:hover{background:#f5f6ff;color:var(--indigo);}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar"></div>
+  <div class="main">
+    <div class="feed-layout">
+
+      <!-- SOL: Profil + keçidlər -->
+      <div class="feed-left">
+        <!-- Profil kartı -->
+        <div class="fw-card" style="overflow:visible;">
+          <div style="height:60px;background:var(--grad);border-radius:14px 14px 0 0;"></div>
+          <div style="padding:0 14px 14px;text-align:center;margin-top:-28px;">
+            <div id="leftAv" style="width:56px;height:56px;border-radius:50%;background:#fff;border:3px solid #fff;margin:0 auto 8px;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:.88rem;font-weight:700;color:#4f46e5;box-shadow:0 2px 8px rgba(0,0,0,.1);"></div>
+            <div style="font-weight:800;font-size:.9rem;color:var(--text);" id="leftName"></div>
+            <div style="font-size:.75rem;color:var(--text-mute);margin-top:2px;" id="leftPos"></div>
+          </div>
+        </div>
+
+        <div class="fw-card" style="margin-top:12px;">
+          <div class="fw-card-head">🧭 Naviqasiya</div>
+          <div style="padding:6px;" id="leftNavLinks"></div>
+        </div>
+      </div>
+
+      <!-- MƏRKƏZ: Feed -->
+      <div class="feed-center">
+
+        <!-- Story bar -->
+        <div class="story-bar" id="storyBar">
+          <div class="story-item" onclick="openNewPost()">
+            <div class="story-av-wrap" style="background:#e8eaf6;">
+              <div class="story-av add-story">+</div>
+            </div>
+            <span class="story-name">Yeni</span>
+          </div>
+        </div>
+
+        <!-- Paylaşım qutusu -->
+        <div class="post-box">
+          <div class="post-box-top">
+            <div class="post-av" id="myAv"></div>
+            <div class="post-input-wrap">
+              <textarea class="post-input" id="postInput" placeholder="Nə düşünürsünüz? İş haqqında paylaşın..."
+                oninput="autoResize(this);detectMention(this)"
+                onkeydown="handlePostKey(event)"></textarea>
+              <div class="tag-suggest" id="tagSuggest"></div>
+            </div>
+          </div>
+          <div class="post-type-btns">
+            <button class="ptb" onclick="document.getElementById('postFileInput').click()">📷 Şəkil/Video</button>
+            <button class="ptb" onclick="tagMode()">🏷 İşçi tag et</button>
+            <button class="ptb" onclick="feelingMode()">😊 Hiss et</button>
+          </div>
+          <input type="file" id="postFileInput" accept="image/*,video/*" style="display:none" onchange="handlePostFile(this)">
+          <div id="postPreview" style="display:none;margin-top:8px;position:relative;">
+            <img id="postPreviewImg" style="width:100%;border-radius:10px;max-height:240px;object-fit:cover;">
+            <button onclick="clearPostFile()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.5);color:#fff;border:none;border-radius:50%;width:26px;height:26px;cursor:pointer;font-size:.8rem;">✕</button>
+          </div>
+          <div id="taggedBadges" style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;"></div>
+          <div class="post-submit-row">
+            <span id="postMood" style="font-size:.82rem;color:var(--text-dim);"></span>
+            <button onclick="submitPost()" style="background:var(--grad);color:#fff;border:none;border-radius:20px;padding:8px 22px;font-weight:700;font-size:.86rem;cursor:pointer;font-family:inherit;box-shadow:0 3px 12px rgba(79,70,229,.3);">Paylaş</button>
+          </div>
+        </div>
+
+        <!-- Post listi -->
+        <div id="feedList"></div>
+        <button class="load-more" id="loadMoreBtn" onclick="loadMore()" style="display:none;">⬇ Daha çox</button>
+      </div>
+
+      <!-- SAĞ: Widgetlar -->
+      <div class="feed-right">
+        <!-- Ayın işçisi -->
+        <div id="eomWidget" style="display:none;" class="fw-card">
+          <div class="eom-widget">
+            <div class="eom-badge">🏆</div>
+            <div id="eomAv" style="width:56px;height:56px;border-radius:50%;background:var(--grad);color:#fff;font-size:.9rem;font-weight:700;display:flex;align-items:center;justify-content:center;overflow:hidden;border:3px solid #f59e0b;"></div>
+            <div class="eom-label">⭐ Bu Ayın İşçisi</div>
+            <div class="eom-name" id="eomName"></div>
+            <div class="eom-note" id="eomNote"></div>
+          </div>
+        </div>
+
+        <!-- İşçilər -->
+        <div class="fw-card">
+          <div class="fw-card-head">👥 İşçilər <a href="/admin.html">Hamısı</a></div>
+          <div id="empWidget"></div>
+        </div>
+
+        <!-- Sürətli statistika -->
+        <div class="fw-card">
+          <div class="fw-card-head">📊 Bu gün</div>
+          <div id="statsWidget">
+            <div class="fw-stat-row"><span>Aktiv tapşırıqlar</span><span class="fw-stat-n" id="sw-tasks">—</span></div>
+            <div class="fw-stat-row"><span>Tamamlanan</span><span class="fw-stat-n" id="sw-done">—</span></div>
+            <div class="fw-stat-row"><span>Gecikən</span><span class="fw-stat-n" id="sw-late">—</span></div>
+          </div>
+        </div>
+
+        <!-- Sürətli keçidlər -->
+        <div class="fw-card">
+          <div class="fw-card-head">⚡ Sürətli</div>
+          <div style="padding:10px;">
+            <a href="/letters.html" style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:9px;font-size:.84rem;color:var(--text);text-decoration:none;transition:.15s;" onmouseover="this.style.background='#f5f6ff'" onmouseout="this.style.background=''">✉️ Yeni məktub</a>
+            <a href="/calendar.html" style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:9px;font-size:.84rem;color:var(--text);text-decoration:none;transition:.15s;" onmouseover="this.style.background='#f5f6ff'" onmouseout="this.style.background=''">📅 Kalendar</a>
+            <a href="/meeting-notes.html" style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:9px;font-size:.84rem;color:var(--text);text-decoration:none;transition:.15s;" onmouseover="this.style.background='#f5f6ff'" onmouseout="this.style.background=''">📝 Görüş yaz</a>
+            <a href="/evaluation.html" style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:9px;font-size:.84rem;color:var(--text);text-decoration:none;transition:.15s;" onmouseover="this.style.background='#f5f6ff'" onmouseout="this.style.background=''">📊 Qiymətləndirmə</a>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /feed-layout -->
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>localStorage.removeItem('sidebar_collapsed');</script>
+<script src="/js/sidebar.js"></script>
+<script>
+requireAuth();
+const user = getUser();
+let contacts = [], posts = [], offset = 0, loading = false;
+const LIMIT = 15;
+const REACTIONS = {like:'👍',love:'❤️',idea:'💡',clap:'👏'};
+const MOODS = ['😊 Xoşdur','🎉 Sevincliyəm','💪 Motivliyəm','🤔 Düşünürəm','😤 İşgüzaram','🙏 Minnətdaram'];
+let postMood = '', postFileData = null, mentionStart = -1;
+
+async function init(){
+  // Sol profil kartı
+  const av = document.getElementById('leftAv');
+  if(av) av.innerHTML = user.photo_url ? `<img src="${user.photo_url}" style="width:100%;height:100%;object-fit:cover;">` : initials(user.full_name||'?');
+  if(document.getElementById('leftName')) document.getElementById('leftName').textContent = user.full_name || '';
+  if(document.getElementById('leftPos'))  document.getElementById('leftPos').textContent  = user.position || '';
+
+  // Postqutu avatar
+  const myAv = document.getElementById('myAv');
+  if(myAv) myAv.innerHTML = user.photo_url ? `<img src="${user.photo_url}">` : initials(user.full_name||'?');
+
+  // Sol nav linklər
+  const navLinks = [
+    ['admin.html','📊','Sektorlar'],['kanban.html','📋','Kanban'],
+    ['analytics.html','📈','Analitika'],['evaluation.html','🏛','Qiymətləndirmə'],
+    ['letters.html','✉️','Məktublar'],['calendar.html','📅','Kalendar'],
+    ['goals.html','🎯','Hədəflər'],['meeting-notes.html','📝','Görüş protokolu'],
+    ['workspace.html','🗂','Workspace'],
+  ];
+  const navEl = document.getElementById('leftNavLinks');
+  if(navEl) navEl.innerHTML = navLinks.map(([href,icon,label])=>
+    `<a href="/${href}" style="display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:10px;font-size:.84rem;font-weight:600;color:var(--text);text-decoration:none;transition:.15s;" onmouseover="this.style.background='#f0eefa'" onmouseout="this.style.background=''"><span style="font-size:1rem;">${icon}</span>${label}</a>`
+  ).join('');
+
+  try { contacts = await apiCall('/employees/contacts'); } catch(e){}
+  await loadPosts(true);
+  loadWidgets();
+  buildStories();
+}
+
+// ─── WIDGETlAR ─────────────────────────────────────────────
+async function loadWidgets(){
+  // Ayın işçisi
+  try {
+    const eom = await apiCall('/settings/employee-of-month');
+    if(eom?.employee){
+      document.getElementById('eomWidget').style.display='block';
+      const av = document.getElementById('eomAv');
+      av.innerHTML = eom.employee.photo_url ? `<img src="${eom.employee.photo_url}" style="width:100%;height:100%;object-fit:cover;">` : initials(eom.employee.full_name);
+      document.getElementById('eomName').textContent = eom.employee.full_name;
+      document.getElementById('eomNote').textContent = eom.note || eom.employee.position || '';
+    }
+  }catch(e){}
+
+  // İşçilər
+  try {
+    const emps = await apiCall('/employees/contacts');
+    document.getElementById('empWidget').innerHTML = emps.slice(0,6).map(e=>`
+      <div class="fw-emp-item">
+        <div class="fw-emp-av">${e.photo_url?`<img src="${e.photo_url}">`:initials(e.full_name)}</div>
+        <div class="fw-emp-info">
+          <div class="name">${e.full_name}</div>
+          <div class="pos">${e.position||''}</div>
+        </div>
+      </div>`).join('');
+  }catch(e){}
+
+  // Tapşırıq statistikası
+  try {
+    const tasks = await apiCall('/tasks/mine');
+    const total = tasks.length;
+    const done  = tasks.filter(t=>t.status==='completed').length;
+    const late  = tasks.filter(t=>t.status!=='completed'&&t.due_date&&t.due_date<new Date().toISOString().slice(0,10)).length;
+    document.getElementById('sw-tasks').textContent = total;
+    document.getElementById('sw-done').textContent  = done;
+    document.getElementById('sw-late').textContent  = late;
+    document.getElementById('sw-late').style.color  = late>0?'var(--red)':'var(--green)';
+  }catch(e){}
+}
+
+function buildStories(){
+  const bar = document.getElementById('storyBar');
+  if(!bar) return;
+
+  // HTML-dəki sabit "+" itemini sil, JS ilə yenidən qur
+  const existing = bar.querySelector('.story-item');
+  if(existing) existing.remove();
+
+  // Öz avatarı — klikliyəndə post box-a focus
+  const myItem = document.createElement('div');
+  myItem.className = 'story-item';
+  myItem.style.cssText = 'position:relative;cursor:pointer;';
+  myItem.onclick = () => {
+    const inp = document.getElementById('postInput');
+    if(inp){ inp.focus(); inp.scrollIntoView({behavior:'smooth',block:'center'}); }
+  };
+  const myImgHtml = user.photo_url ? `<img src="${user.photo_url}">` : initials(user.full_name||'?');
+  myItem.innerHTML = `
+    <div class="story-av-wrap" style="background:var(--grad);">
+      <div class="story-av">${myImgHtml}</div>
+    </div>
+    <div style="position:absolute;top:0;right:0;width:18px;height:18px;background:var(--indigo);border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:.6rem;color:#fff;font-weight:900;">+</div>
+    <span class="story-name">Siz</span>`;
+  bar.prepend(myItem);
+
+  // Digər işçilər — klikliyəndə @ad ilə tag
+  contacts.slice(0,8).forEach(c => {
+    const item = document.createElement('div');
+    item.className = 'story-item';
+    item.style.cursor = 'pointer';
+    item.title = c.full_name;
+    item.onclick = () => {
+      const inp = document.getElementById('postInput');
+      if(inp){
+        inp.value = (inp.value.trim() ? inp.value.trimEnd()+' ' : '') + '@'+c.full_name+' ';
+        inp.focus(); inp.style.minHeight='90px';
+        inp.scrollIntoView({behavior:'smooth',block:'center'});
+      }
+    };
+    const img = c.photo_url ? `<img src="${c.photo_url}">` : initials(c.full_name);
+    item.innerHTML = `
+      <div class="story-av-wrap">
+        <div class="story-av">${img}</div>
+      </div>
+      <span class="story-name">${c.full_name.split(' ')[0]}</span>`;
+    bar.appendChild(item);
+  });
+}
+
+
+// ─── POSTLAR ─────────────────────────────────────────────
+async function loadPosts(reset){
+  if(loading)return;
+  loading=true;
+  if(reset){posts=[];offset=0;document.getElementById('feedList').innerHTML='';}
+  try{
+    const batch = await apiCall(`/feed?limit=${LIMIT}&offset=${offset}`);
+    posts=posts.concat(batch); offset+=batch.length;
+    const list=document.getElementById('feedList');
+    if(reset&&!posts.length){
+      list.innerHTML='<div style="text-align:center;padding:48px 20px;color:var(--text-mute);"><div style="font-size:3rem;margin-bottom:10px;">📭</div><div style="font-weight:700;font-size:.95rem;">Hələ paylaşım yoxdur</div><div style="font-size:.84rem;margin-top:4px;">İlk sən paylaş!</div></div>';
+    } else {
+      batch.forEach(p=>list.appendChild(buildPostEl(p)));
+    }
+    document.getElementById('loadMoreBtn').style.display=batch.length>=LIMIT?'':'none';
+  }catch(e){}
+  loading=false;
+}
+function loadMore(){loadPosts(false);}
+
+function buildPostEl(p){
+  const div=document.createElement('div');
+  div.className='post-card'; div.id='post-'+p.id;
+  const myReact=p.reactions?.find(r=>r.user_id===user.id);
+  const rcnt={};
+  (p.reactions||[]).forEach(r=>{rcnt[r.type]=(rcnt[r.type]||0)+1;});
+  const totalReact=(p.reactions||[]).length;
+  const isOwner=p.author_id===user.id||['admin','director','deputy'].includes(user.role);
+  div.innerHTML=`
+    <div class="pc-head">
+      <div class="cmt-av">${p.author?.photo_url?`<img src="${p.author.photo_url}">`:initials(p.author?.full_name||'?')}</div>
+      <div class="pc-info">
+        <div class="pc-name">${esc(p.author?.full_name||'?')}</div>
+        <div class="pc-meta">${esc(p.author?.position||'')} · ${timeAgo(p.created_at)}</div>
+      </div>
+      ${isOwner?`<button class="pc-del" onclick="delPost('${p.id}')">✕</button>`:''}
+    </div>
+    <div class="pc-text">${fmt(p.content)}</div>
+    ${p.image_url?`<img class="pc-img" src="${p.image_url}" alt="">`:''}
+    <div class="pc-react-bar">
+      ${Object.entries(REACTIONS).map(([t,e])=>`
+        <button class="react-btn ${myReact?.type===t?'active':''}" onclick="react('${p.id}','${t}',this)" data-type="${t}">
+          ${e}<span style="font-size:.78rem;margin-left:2px;">${rcnt[t]||''}</span>
+        </button>`).join('')}
+      ${totalReact?`<span class="react-total">${totalReact} reaksiya</span>`:''}
+    </div>
+    <div class="pc-foot">
+      <button class="pc-foot-btn" onclick="toggleCmts('${p.id}')">💬 ${(p.comments||[]).length} şərh</button>
+      <button class="pc-foot-btn" onclick="copyLink('${p.id}')">🔗 Paylaş</button>
+    </div>
+    <div class="cmts-wrap" id="cmts-${p.id}" style="display:none;flex-direction:column;gap:8px;">
+      ${renderCmts(p.comments||[],p.id)}
+      <div class="cmt-input-row">
+        <div class="cmt-av">${user.photo_url?`<img src="${user.photo_url}">`:initials(user.full_name)}</div>
+        <input class="cmt-input" id="ci-${p.id}" placeholder="Şərh yaz..." onkeydown="if(event.key==='Enter'){event.preventDefault();sendCmt('${p.id}');}">
+        <button class="cmt-send" onclick="sendCmt('${p.id}')">→</button>
+      </div>
+    </div>`;
+  return div;
+}
+
+function renderCmts(cmts,postId){
+  if(!cmts.length) return `<div style="font-size:.82rem;color:var(--text-mute);padding:4px 0;">Hələ şərh yoxdur — ilk sən yaz!</div>`;
+  return cmts.map(c=>`
+    <div class="cmt-row" id="cmt-${c.id}">
+      <div class="cmt-av">${c.author?.photo_url?`<img src="${c.author.photo_url}">`:initials(c.author?.full_name||'?')}</div>
+      <div class="cmt-bubble">
+        <div class="cmt-name">${esc(c.author?.full_name||'?')}</div>
+        <div class="cmt-text">${esc(c.content)}</div>
+        <div class="cmt-foot"><span>${timeAgo(c.created_at)}</span>${c.author_id===user.id||['admin','director','deputy'].includes(user.role)?`<span class="cmt-del" onclick="delCmt('${postId}','${c.id}')">Sil</span>`:''}</div>
+      </div>
+    </div>`).join('');
+}
+
+function fmt(text){ return esc(text).replace(/@(\S+)/g,'<span class="mention">@$1</span>'); }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ─── YENİ POST ─────────────────────────────────────────────
+function openNewPost(){ document.getElementById('postInput').focus(); }
+
+async function submitPost(){
+  const content = document.getElementById('postInput').value.trim();
+  const mood = postMood;
+  if(!content&&!mood) return;
+  const full = content+(mood?'\n'+mood:'');
+  try{
+    const p=await apiCall('/feed','POST',{content:full});
+    document.getElementById('postInput').value='';
+    document.getElementById('postInput').style.height='';
+    postMood=''; document.getElementById('postMood').textContent='';
+    clearPostFile();
+    document.getElementById('taggedBadges').innerHTML='';
+    const el=buildPostEl({...p,author:{full_name:user.full_name,photo_url:user.photo_url,position:user.position},reactions:[],comments:[]});
+    const list=document.getElementById('feedList');
+    const empty=list.querySelector('[style*="text-align:center"]');
+    if(empty)empty.remove();
+    list.prepend(el);
+  }catch(e){alert(e.message);}
+}
+
+// Fayl
+function handlePostFile(inp){
+  const file=inp.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    document.getElementById('postPreviewImg').src=e.target.result;
+    document.getElementById('postPreview').style.display='block';
+    postFileData=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function clearPostFile(){document.getElementById('postPreview').style.display='none';document.getElementById('postPreviewImg').src='';postFileData=null;document.getElementById('postFileInput').value='';}
+
+function feelingMode(){
+  const m=MOODS[Math.floor(Math.random()*MOODS.length)];
+  postMood=m; document.getElementById('postMood').textContent=m;
+}
+function tagMode(){
+  const input=document.getElementById('postInput');
+  input.focus();
+  const v=input.value;
+  input.value=v+(v.endsWith(' ')||!v?'@':'  @');
+  input.dispatchEvent(new Event('input'));
+}
+
+// ─── @TAG ─────────────────────────────────────────────────
+function detectMention(ta){
+  const val=ta.value, cursor=ta.selectionStart;
+  let i=cursor-1;
+  while(i>=0&&val[i]!==' '&&val[i]!=='\n')i--;
+  const word=val.slice(i+1,cursor);
+  if(word.startsWith('@')&&word.length>1){
+    mentionStart=i+1;
+    const q=word.slice(1).toLowerCase();
+    const matches=contacts.filter(c=>c.full_name.toLowerCase().includes(q)).slice(0,6);
+    if(matches.length){
+      document.getElementById('tagSuggest').innerHTML=matches.map(c=>`
+        <div class="tag-item" onclick="insertTag('${c.full_name.replace(/'/g,"\\'")}')">
+          <div class="tag-av">${c.photo_url?`<img src="${c.photo_url}">`:initials(c.full_name)}</div>
+          <span>${c.full_name}</span>
+        </div>`).join('');
+      document.getElementById('tagSuggest').classList.add('show');
+    } else { document.getElementById('tagSuggest').classList.remove('show'); }
+  } else { document.getElementById('tagSuggest').classList.remove('show'); }
+}
+function insertTag(name){
+  const ta=document.getElementById('postInput');
+  const val=ta.value, cursor=ta.selectionStart;
+  ta.value=val.slice(0,mentionStart)+'@'+name+' '+val.slice(cursor);
+  ta.focus(); document.getElementById('tagSuggest').classList.remove('show');
+}
+function handlePostKey(e){if(e.key==='Escape')document.getElementById('tagSuggest').classList.remove('show');}
+document.addEventListener('click',e=>{if(!e.target.closest('.post-input-wrap'))document.getElementById('tagSuggest').classList.remove('show');});
+
+// ─── REAKSİYA ─────────────────────────────────────────────
+async function react(postId,type,btn){
+  try{
+    const reactions=await apiCall(`/feed/${postId}/react`,'POST',{type});
+    const bar=btn.closest('.pc-react-bar');
+    const cnt={};
+    reactions.forEach(r=>{cnt[r.type]=(cnt[r.type]||0)+1;});
+    const myNew=reactions.find(r=>r.user_id===user.id);
+    bar.querySelectorAll('.react-btn').forEach(b=>{
+      const t=b.dataset.type;
+      b.className='react-btn'+(myNew?.type===t?' active':'');
+      b.innerHTML=REACTIONS[t]+`<span style="font-size:.78rem;margin-left:2px;">${cnt[t]||''}</span>`;
+    });
+    const tot=reactions.length;
+    let totEl=bar.querySelector('.react-total');
+    if(tot){
+      if(!totEl){totEl=document.createElement('span');totEl.className='react-total';bar.appendChild(totEl);}
+      totEl.textContent=tot+' reaksiya';
+    } else if(totEl){totEl.remove();}
+  }catch(e){}
+}
+
+// ─── ŞƏRH ─────────────────────────────────────────────────
+function toggleCmts(id){
+  const el=document.getElementById('cmts-'+id);
+  if(!el)return;
+  const open=el.style.display==='none';
+  el.style.display=open?'flex':'none';
+  if(open)document.getElementById('ci-'+id)?.focus();
+}
+async function sendCmt(postId){
+  const input=document.getElementById('ci-'+postId);
+  const content=input?.value.trim();
+  if(!content)return;
+  input.value='';
+  try{
+    const c=await apiCall(`/feed/${postId}/comments`,'POST',{content});
+    const cmt={...c,author:{full_name:user.full_name,photo_url:user.photo_url}};
+    const wrap=document.getElementById('cmts-'+postId);
+    const inputRow=wrap.querySelector('.cmt-input-row');
+    const noEl=wrap.querySelector('[style*="Hələ şərh"]');
+    if(noEl)noEl.remove();
+    const tmp=document.createElement('div');
+    tmp.innerHTML=renderCmts([cmt],postId);
+    wrap.insertBefore(tmp.firstElementChild,inputRow);
+    const fb=document.querySelector(`#post-${postId} .pc-foot-btn`);
+    if(fb){const m=fb.textContent.match(/\d+/);fb.innerHTML='💬 '+(m?parseInt(m[0])+1:1)+' şərh';}
+  }catch(e){alert(e.message);}
+}
+async function delCmt(postId,id){
+  if(!confirm('Silinsin?'))return;
+  await apiCall(`/feed/comments/${id}`,'DELETE');
+  document.getElementById('cmt-'+id)?.remove();
+}
+async function delPost(id){
+  if(!confirm('Paylaşım silinsin?'))return;
+  await apiCall(`/feed/${id}`,'DELETE');
+  document.getElementById('post-'+id)?.remove();
+}
+function copyLink(id){
+  navigator.clipboard.writeText(location.origin+'/whiteboard.html#'+id).catch(()=>{});
+  alert('Link kopyalandı!');
+}
+function autoResize(ta){ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';}
+
+init();
+</script>
+<script src="/js/chat-widget.js"></script>
+<script src="/js/animate.js"></script>
+</body>
+</html>

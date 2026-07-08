@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resurslar — GDRTI Performans</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="app">
+  <div class="sidebar"></div>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <h1>📚 Resurslar</h1>
+        <div class="subtitle">Şablonlar və lazımi materiallar — hamı üçün</div>
+      </div>
+      <button class="btn small" onclick="showUploadModal()">⬆️ Yüklə</button>
+    </div>
+
+    <div class="field" style="max-width:280px; margin-bottom:20px;">
+      <select id="categoryFilter" onchange="loadResources()">
+        <option value="">Bütün kateqoriyalar</option>
+      </select>
+    </div>
+
+    <div class="grid sectors" id="resourcesGrid"></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="uploadModal" style="display:none;">
+  <div class="modal">
+    <h3>⬆️ Resurs yüklə</h3>
+    <form id="uploadForm">
+      <div class="field">
+        <label>Başlıq</label>
+        <input type="text" id="resTitle" required placeholder="məs. PTPK Hesabat Şablonu">
+      </div>
+      <div class="field">
+        <label>Təsvir</label>
+        <textarea id="resDesc" rows="2" placeholder="Qısa izah (istəyə görə)"></textarea>
+      </div>
+      <div class="field">
+        <label>Kateqoriya</label>
+        <input type="text" id="resCategory" placeholder="məs. Şablonlar, Hesabatlar, Qanunvericilik" list="catList">
+        <datalist id="catList"></datalist>
+      </div>
+      <div class="field">
+        <label>Fayl (maks. 5MB)</label>
+        <input type="file" id="resFile" required>
+        <div id="resFileInfo" style="font-size:.78rem; color:var(--text-dim); margin-top:6px;"></div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn secondary" onclick="closeUploadModal()">Ləğv et</button>
+        <button type="submit" class="btn">Yüklə</button>
+      </div>
+      <div class="error-msg" id="uploadErr"></div>
+    </form>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+const user = requireAuth();
+let pendingFile = null;
+let allResources = [];
+
+function fileIcon(type, name){
+  if (!type) type = '';
+  if (type.includes('pdf') || name.endsWith('.pdf')) return '📕';
+  if (type.includes('word') || name.endsWith('.doc') || name.endsWith('.docx')) return '📘';
+  if (type.includes('sheet') || name.endsWith('.xls') || name.endsWith('.xlsx')) return '📗';
+  if (type.includes('image')) return '🖼';
+  if (type.includes('presentation') || name.endsWith('.ppt') || name.endsWith('.pptx')) return '📙';
+  return '📄';
+}
+
+async function loadResources(){
+  allResources = await apiCall('/resources');
+  const cats = [...new Set(allResources.map(r => r.category))].sort();
+  const filterSel = document.getElementById('categoryFilter');
+  const currentVal = filterSel.value;
+  filterSel.innerHTML = '<option value="">Bütün kateqoriyalar</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join('');
+  filterSel.value = currentVal;
+  document.getElementById('catList').innerHTML = cats.map(c => `<option value="${c}">`).join('');
+
+  const filtered = filterSel.value ? allResources.filter(r => r.category === filterSel.value) : allResources;
+  const grid = document.getElementById('resourcesGrid');
+  grid.innerHTML = filtered.map(r => `
+    <div class="card">
+      <div class="top">
+        <div>
+          <h3>${fileIcon(r.file_type, r.file_name)} ${r.title}</h3>
+          <div class="meta">${r.category} · ${r.employees ? r.employees.full_name : 'Naməlum'} · ${new Date(r.created_at).toLocaleDateString('az-AZ')}</div>
+        </div>
+      </div>
+      ${r.description ? `<p style="font-size:.85rem; color:var(--text-dim); margin-bottom:12px;">${r.description}</p>` : ''}
+      <div style="display:flex; gap:8px;">
+        <button class="btn small" onclick="downloadResource('${r.id}')">⬇️ Endir</button>
+        ${(r.uploaded_by === user.id || ['admin','director','deputy'].includes(user.role)) ? `<button class="btn small secondary" onclick="deleteResource('${r.id}')">🗑</button>` : ''}
+      </div>
+    </div>
+  `).join('') || '<div class="empty-state">Hələ resurs yüklənməyib</div>';
+}
+
+async function downloadResource(id){
+  try {
+    const r = await apiCall(`/resources/${id}/download`);
+    const a = document.createElement('a');
+    a.href = `data:${r.file_type || 'application/octet-stream'};base64,${r.file_data}`;
+    a.download = r.file_name;
+    a.click();
+  } catch (err) { alert(err.message); }
+}
+
+async function deleteResource(id){
+  if (!confirm('Bu resursu silmək istədiyinizə əminsiniz?')) return;
+  try {
+    await apiCall(`/resources/${id}`, 'DELETE');
+    loadResources();
+  } catch (err) { alert(err.message); }
+}
+
+function showUploadModal(){
+  pendingFile = null;
+  document.getElementById('uploadForm').reset();
+  document.getElementById('resFileInfo').textContent = '';
+  document.getElementById('uploadModal').style.display = 'flex';
+}
+function closeUploadModal(){ document.getElementById('uploadModal').style.display = 'none'; }
+
+document.getElementById('resFile').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  const infoEl = document.getElementById('resFileInfo');
+  if (!file) { pendingFile = null; infoEl.textContent = ''; return; }
+  if (file.size > 5 * 1024 * 1024) {
+    infoEl.textContent = '⚠️ Fayl 5MB-dan böyükdür';
+    e.target.value = '';
+    pendingFile = null;
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    pendingFile = { name: file.name, type: file.type, data: ev.target.result.split(',')[1] };
+    infoEl.textContent = `✅ ${file.name} (${Math.round(file.size/1024)} KB)`;
+  };
+  reader.readAsDataURL(file);
+});
+
+document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById('uploadErr');
+  errEl.textContent = '';
+  if (!pendingFile) { errEl.textContent = 'Fayl seçin'; return; }
+  try {
+    await apiCall('/resources', 'POST', {
+      title: document.getElementById('resTitle').value.trim(),
+      description: document.getElementById('resDesc').value.trim(),
+      category: document.getElementById('resCategory').value.trim() || 'ümumi',
+      file_name: pendingFile.name, file_type: pendingFile.type, file_data: pendingFile.data
+    });
+    closeUploadModal();
+    loadResources();
+  } catch (err) { errEl.textContent = err.message; }
+});
+
+loadResources();
+</script>
+<script src="/js/sidebar.js"></script>
+<script src="/js/chat-widget.js"></script>
+<script src="/js/animate.js"></script>
+</body>
+</html>

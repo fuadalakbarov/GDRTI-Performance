@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Görüş Protokolu — GDRTI Performans</title>
+<link rel="stylesheet" href="/css/style.css">
+<style>
+.mn-list{display:flex;flex-direction:column;gap:10px;}
+.mn-card{background:var(--card,#fff);border:1px solid var(--border,#e8eaf6);border-radius:14px;padding:18px;box-shadow:0 2px 12px rgba(79,70,229,.06);cursor:pointer;transition:.2s;}
+.mn-card:hover{border-color:#a5b4fc;transform:translateY(-1px);}
+.mn-card h3{font-size:.95rem;font-weight:700;margin-bottom:4px;color:#1e1a3c;}
+.mn-card .meta{font-size:.76rem;color:#6b7280;}
+.mn-detail{background:var(--card,#fff);border:1px solid var(--border,#e8eaf6);border-radius:14px;padding:24px;box-shadow:0 2px 12px rgba(79,70,229,.06);}
+.mn-section{margin-bottom:20px;}
+.mn-section label{display:block;font-size:.78rem;font-weight:700;color:#5c6080;margin-bottom:7px;text-transform:uppercase;letter-spacing:.04em;}
+.mn-section textarea,.mn-section input{
+  width:100%;background:#f8f8fd;border:1.5px solid #c7cae8;border-radius:10px;
+  padding:11px 14px;font-size:.88rem;color:#1e1a3c;outline:none;
+  font-family:inherit;resize:vertical;transition:border-color .15s,box-shadow .15s;
+}
+.mn-section textarea:focus,.mn-section input:focus{
+  border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.1);
+}
+.mn-section select{
+  width:100%;background:#f8f8fd;border:1.5px solid #c7cae8;border-radius:10px;
+  padding:10px 14px;font-size:.88rem;color:#1e1a3c;outline:none;font-family:inherit;
+  transition:border-color .15s;
+}
+.mn-section select:focus{border-color:#4f46e5;}
+.action-item{display:flex;gap:8px;align-items:center;padding:8px 12px;background:#f0f2ff;border-radius:8px;margin-bottom:6px;border:1px solid #c7cae8;}
+.action-item input{flex:1;border:none;background:transparent;font-size:.86rem;color:#1e1a3c;outline:none;font-family:inherit;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar"></div>
+  <div class="main">
+    <div class="topbar">
+      <div><h1>📝 Görüş protokolları</h1><div class="subtitle">Rəsmi görüşlərin qeydləri</div></div>
+      <button class="btn small" onclick="showNew()">+ Yeni protokol</button>
+    </div>
+    <div id="listView">
+      <div class="mn-list" id="mnList"><div class="empty-state">Yüklənir...</div></div>
+    </div>
+    <div id="detailView" style="display:none;">
+      <button class="btn small secondary" style="margin-bottom:16px;" onclick="showList()">← Geri</button>
+      <div class="mn-detail" id="mnDetail"></div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/sidebar.js"></script>
+<script>
+requireAuth();
+let employees = [], currentNote = null;
+
+async function init(){
+  try{ employees = await apiCall('/employees/contacts'); } catch(e){}
+  loadList();
+}
+
+async function loadList(){
+  try {
+    const notes = await apiCall('/meeting-notes');
+    const list = document.getElementById('mnList');
+    list.innerHTML = notes.map(n => `
+      <div class="mn-card" onclick="openNote('${n.id}')">
+        <h3>${n.title}</h3>
+        <div class="meta">
+          ${n.employees?.full_name||''} · ${new Date(n.created_at).toLocaleDateString('az-AZ')}
+          ${n.next_meeting ? ` · Növbəti görüş: ${n.next_meeting}` : ''}
+        </div>
+        ${n.attendees?.length ? `<div class="meta" style="margin-top:4px;">👥 ${n.attendees.length} iştirakçı</div>` : ''}
+      </div>`).join('') || '<div class="empty-state">Hələ protokol yoxdur</div>';
+  } catch(e){}
+}
+
+function showList(){ document.getElementById('listView').style.display='block'; document.getElementById('detailView').style.display='none'; }
+function showDetail(){ document.getElementById('listView').style.display='none'; document.getElementById('detailView').style.display='block'; }
+
+async function openNote(id){
+  const note = await apiCall(`/meeting-notes/${id}`);
+  currentNote = note;
+  renderDetail(note);
+  showDetail();
+}
+
+function renderDetail(n){
+  const isOwner = n.created_by === (getUser()||{}).id || (getUser()||{}).role === 'admin';
+  document.getElementById('mnDetail').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
+      <div>
+        <h2 style="font-size:1.2rem;">${n.title}</h2>
+        <div style="font-size:.8rem;color:var(--text-dim);margin-top:4px;">${new Date(n.created_at).toLocaleString('az-AZ')}</div>
+      </div>
+      ${isOwner ? `
+        <div style="display:flex;gap:8px;">
+          <button class="btn small" onclick="editNote()">✏️ Redaktə</button>
+          <button class="btn small secondary" style="color:var(--red);" onclick="deleteNote('${n.id}')">🗑</button>
+        </div>` : ''}
+    </div>
+    ${renderSection('📋 Gündəm',n.agenda)}
+    ${renderSection('✅ Qərarlar',n.decisions)}
+    ${n.action_items?.length ? `
+      <div class="mn-section">
+        <label>📌 Tapşırıqlar</label>
+        ${(n.action_items||[]).map(a=>`<div class="action-item">• ${a.task} ${a.assignee_name?'→ '+a.assignee_name:''} ${a.due_date?'('+a.due_date+')':''}</div>`).join('')}
+      </div>` : ''}
+    ${n.next_meeting ? `<div class="mn-section"><label>📅 Növbəti görüş</label><div style="font-size:.9rem;">${n.next_meeting}</div></div>` : ''}
+  `;
+}
+
+function renderSection(title, text){
+  if (!text) return '';
+  return `<div class="mn-section"><label>${title}</label><div style="font-size:.88rem;white-space:pre-wrap;line-height:1.6;">${text}</div></div>`;
+}
+
+function showNew(){
+  currentNote = null;
+  openEditor({ title:'', attendees:[], agenda:'', decisions:'', action_items:[], next_meeting:'' });
+  showDetail();
+}
+
+function editNote(){ openEditor(currentNote); }
+
+function openEditor(n){
+  const empOptions = employees.map(e => `<option value="${e.id}" ${(n.attendees||[]).includes(e.id)?'selected':''}>${e.full_name}</option>`).join('');
+  document.getElementById('mnDetail').innerHTML = `
+    <div class="mn-section"><label>Görüşün adı</label><input type="text" id="eTitle" value="${n.title||''}"></div>
+    <div class="mn-section"><label>İştirakçılar</label>
+      <select id="eAttendees" multiple style="height:100px;">${empOptions}</select>
+    </div>
+    <div class="mn-section"><label>📋 Gündəm</label><textarea id="eAgenda" rows="4">${n.agenda||''}</textarea></div>
+    <div class="mn-section"><label>✅ Qərarlar</label><textarea id="eDecisions" rows="4">${n.decisions||''}</textarea></div>
+    <div class="mn-section"><label>📌 Tapşırıqlar (hər sətirdə bir)</label><textarea id="eActions" rows="4" placeholder="Hesabat hazırlanacaq — Fuad Alakbarov — 2026-07-10">${(n.action_items||[]).map(a=>`${a.task}${a.assignee_name?' — '+a.assignee_name:''}${a.due_date?' — '+a.due_date:''}`).join('\n')}</textarea></div>
+    <div class="mn-section"><label>📅 Növbəti görüş tarixi</label><input type="date" id="eNext" value="${n.next_meeting||''}"></div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn secondary" onclick="${n.id?`showList()`:` showList()`}">Ləğv et</button>
+      <button class="btn" onclick="saveNote('${n.id||''}')">Saxla</button>
+    </div>
+  `;
+}
+
+async function saveNote(id){
+  const title = document.getElementById('eTitle').value.trim();
+  if (!title){ alert('Başlıq tələb olunur'); return; }
+  const attendees = [...document.getElementById('eAttendees').selectedOptions].map(o=>o.value);
+  const actionLines = document.getElementById('eActions').value.split('\n').filter(l=>l.trim());
+  const action_items = actionLines.map(l => {
+    const parts = l.split(' — ');
+    return { task: parts[0]?.trim()||l, assignee_name: parts[1]?.trim()||'', due_date: parts[2]?.trim()||'' };
+  });
+  const body = { title, attendees, agenda: document.getElementById('eAgenda').value, decisions: document.getElementById('eDecisions').value, action_items, next_meeting: document.getElementById('eNext').value||null };
+  try {
+    const saved = id ? await apiCall(`/meeting-notes/${id}`,'PATCH',body) : await apiCall('/meeting-notes','POST',body);
+    currentNote = saved;
+    renderDetail(saved);
+    loadList();
+  } catch(e){ alert(e.message); }
+}
+
+async function deleteNote(id){ if(!confirm('Silinsin?'))return; await apiCall(`/meeting-notes/${id}`,'DELETE'); showList(); loadList(); }
+
+init();
+</script>
+<script src="/js/chat-widget.js"></script>
+<script src="/js/animate.js"></script>
+</body>
+</html>
