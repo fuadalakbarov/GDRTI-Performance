@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Inter',sans-serif;min-height:100vh;overflow:hidden;background:#0f0e1a;}
+body{font-family:'Inter',sans-serif;min-height:100vh;overflow-y:auto;background:#0f0e1a;}
 
 /* ─── ARXA PLAN VİDEO ─────────────────────────── */
 .bg-video-wrap{position:fixed;inset:0;z-index:0;}
@@ -34,12 +34,12 @@ body{font-family:'Inter',sans-serif;min-height:100vh;overflow:hidden;background:
 }
 
 /* ─── ƏSAS LAYOUT ──────────────────────────────── */
-.page{position:relative;z-index:10;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+.page{position:relative;z-index:10;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;}
 
 .split{
   display:grid;
   grid-template-columns:1fr 480px;
-  gap:60px;
+  gap:40px;
   max-width:1000px;
   width:100%;
   align-items:center;
@@ -51,11 +51,11 @@ body{font-family:'Inter',sans-serif;min-height:100vh;overflow:hidden;background:
   display:inline-flex;align-items:center;gap:8px;
   background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
   border-radius:20px;padding:5px 14px;font-size:.76rem;font-weight:600;
-  color:rgba(255,255,255,.85);margin-bottom:22px;letter-spacing:.04em;
+  color:rgba(255,255,255,.85);margin-bottom:16px;letter-spacing:.04em;
   backdrop-filter:blur(8px);
 }
 .hero h1{
-  font-size:2.6rem;font-weight:900;line-height:1.15;
+  font-size:2.2rem;font-weight:900;line-height:1.15;
   letter-spacing:-.03em;margin-bottom:14px;
   background:linear-gradient(135deg,#fff 0%,rgba(165,180,252,.9) 100%);
   -webkit-background-clip:text;background-clip:text;color:transparent;
@@ -68,10 +68,10 @@ body{font-family:'Inter',sans-serif;min-height:100vh;overflow:hidden;background:
 
 /* ─── SAĞ: GİRİŞ KARTI ───────────────────────── */
 .login-card{
-  max-width:480px;
+  max-width:460px;
   background:rgba(255,255,255,.08);
   border:1px solid rgba(255,255,255,.15);
-  border-radius:24px;padding:36px 32px;
+  border-radius:24px;padding:24px 28px;
   backdrop-filter:blur(24px);
   box-shadow:0 32px 80px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.12);
   animation:card-in .6s cubic-bezier(.34,1.56,.64,1);
@@ -184,13 +184,13 @@ body{font-family:'Inter',sans-serif;min-height:100vh;overflow:hidden;background:
     <!-- SAĞ: Giriş -->
     <div class="login-card">
       <div class="step active" id="step1">
-        <div style="width:100%;border-radius:16px;overflow:hidden;margin-bottom:22px;box-shadow:0 12px 32px rgba(0,0,0,.5);background:linear-gradient(135deg,#312e81,#4f46e5);">
+        <div style="width:100%;border-radius:16px;overflow:hidden;margin-bottom:16px;box-shadow:0 12px 32px rgba(0,0,0,.5);background:linear-gradient(135deg,#312e81,#4f46e5);">
           <video autoplay loop playsinline
-            style="width:100%;height:260px;object-fit:cover;display:block;"
+            style="width:100%;height:220px;object-fit:cover;display:block;"
             onerror="this.style.display='none'">
-            <source src="https://github.com/fuadalakbarov/GDRTI-Performance/releases/download/v1.0/intro-video.mp4" type="video/mp4">
+            <source src="/intro-video.mp4" type="video/mp4">
           </video>
-          <div id="videoFallback" style="width:100%;height:260px;display:none;align-items:center;justify-content:center;flex-direction:column;gap:8px;">
+          <div id="videoFallback" style="width:100%;height:220px;display:none;align-items:center;justify-content:center;flex-direction:column;gap:8px;">
             <div style="font-size:2.5rem;">🎓</div>
             <div style="color:rgba(255,255,255,.6);font-size:.78rem;">GDRTI Performans Sistemi</div>
           </div>
