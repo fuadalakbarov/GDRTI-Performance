@@ -102,6 +102,10 @@ function buildSidebar() {
           <span class="sb-label">${l.label}</span>
           ${cur===l.href?'<span class="sb-active-dot"></span>':''}
         </a>`).join('')}
+      <a href="#" onclick="logout()" class="sb-link sb-logout" title="Çıxış" style="--i:${links.length}">
+        <span class="sb-icon">${SVG.logout}</span>
+        <span class="sb-label">Çıxış</span>
+      </a>
     </nav>
 
     <div class="sb-footer">
