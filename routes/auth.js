@@ -25,7 +25,7 @@ router.post('/login', async (req, res) => {
   const token = jwt.sign(
     { id: employee.id, role: employee.role, sector_id: employee.sector_id, full_name: employee.full_name },
     process.env.JWT_SECRET,
-    { expiresIn: '7d' }
+    { expiresIn: '30d' }
   );
 
   res.json({
@@ -101,7 +101,7 @@ router.post('/google', async (req, res) => {
   const token = jwt.sign(
     { id: employee.id, role: employee.role, sector_id: employee.sector_id, full_name: employee.full_name },
     process.env.JWT_SECRET,
-    { expiresIn: '7d' }
+    { expiresIn: '30d' }
   );
 
   res.json({
@@ -161,7 +161,7 @@ router.post('/supabase-session', async (req, res) => {
   const token = jwt.sign(
     { id: emp.id, role: emp.role, sector_id: emp.sector_id, full_name: emp.full_name },
     process.env.JWT_SECRET,
-    { expiresIn: '7d' }
+    { expiresIn: '30d' }
   );
 
   res.json({

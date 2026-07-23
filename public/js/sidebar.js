@@ -33,12 +33,8 @@ function buildSidebar() {
     { href:'admin.html',         icon:SVG.sectors,      label:'Sektorlar' },
     { href:'kanban.html',        icon:SVG.kanban,       label:'Kanban' },
     { href:'analytics.html',     icon:SVG.analytics,    label:'Analitika' },
-    { href:'evaluation.html',    icon:SVG.evaluation,   label:'Qiymətləndirmə' },
-    { href:'goals.html',         icon:SVG.goals,        label:'Hədəflər' },
-    { href:'leaderboard.html',   icon:SVG.leaderboard,  label:'Liderboard' },
     { href:'workspace.html',     icon:SVG.workspace,    label:'Workspace' },
     { href:'whiteboard.html',   icon:`<svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><rect x='2' y='3' width='20' height='14' rx='2'/><path d='M8 21h8M12 17v4'/><path d='M7 8l3 3 4-4'/></svg>`, label:'İş Lenti' },
-    { href:'letters.html',       icon:SVG.letters,      label:'Məktublar' },
     { href:'resources.html',     icon:SVG.resources,    label:'Resurslar' },
     { href:'calendar.html',      icon:SVG.calendar,     label:'Kalendar' },
     { href:'meeting-notes.html', icon:SVG.meetingnotes, label:'Görüş protokolu' },
@@ -49,10 +45,8 @@ function buildSidebar() {
     { href:'my-dashboard.html',  icon:SVG.dashboard,    label:'Mənim Panelim' },
     { href:'kanban.html',        icon:SVG.kanban,       label:'Kanban' },
     { href:'analytics.html',     icon:SVG.analytics,    label:'Analitika' },
-    { href:'leaderboard.html',   icon:SVG.leaderboard,  label:'Liderboard' },
     { href:'workspace.html',     icon:SVG.workspace,    label:'Workspace' },
     { href:'whiteboard.html',    icon:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 8l3 3 4-4"/></svg>`, label:'İş Lenti' },
-    { href:'letters.html',       icon:SVG.letters,      label:'Məktublar' },
     { href:'resources.html',     icon:SVG.resources,    label:'Resurslar' },
     { href:'calendar.html',      icon:SVG.calendar,     label:'Kalendar' },
     { href:'surveys.html',       icon:SVG.surveys,      label:'Sorğular' },
@@ -164,7 +158,6 @@ async function globalSearchFn(q) {
       });
       (searchCache.letters||[]).forEach(l => {
         if (l.subject.toLowerCase().includes(ql))
-          results.push({ icon:'✉️', label:l.subject, sub:new Date(l.created_at).toLocaleDateString('az-AZ'), href:'/letters.html' });
       });
       if (!results.length) {
         resEl.innerHTML='<div class="sr-empty">Nəticə tapılmadı</div>';
