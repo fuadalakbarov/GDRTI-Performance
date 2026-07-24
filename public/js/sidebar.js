@@ -158,6 +158,7 @@ async function globalSearchFn(q) {
       });
       (searchCache.letters||[]).forEach(l => {
         if (l.subject.toLowerCase().includes(ql))
+          results.push({ icon:'✉️', label:l.subject, sub:'Məktub', href:'/letters.html' });
       });
       if (!results.length) {
         resEl.innerHTML='<div class="sr-empty">Nəticə tapılmadı</div>';
