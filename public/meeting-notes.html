@@ -166,6 +166,52 @@ async function deleteNote(id){ if(!confirm('Silinsin?'))return; await apiCall(`/
 init();
 </script>
 <script src="/js/chat-widget.js"></script>
-<script src="/js/animate.js"></script>
+<script src="/js/animate.js">
+function printMeetingPDF() {
+  const notes = document.querySelectorAll('.meeting-card, .mn-card, .note-card, [class*="meet"]');
+  
+  const w = window.open('', '_blank');
+  w.document.write(`
+    <!DOCTYPE html>
+    <html lang="az">
+    <head>
+      <meta charset="UTF-8">
+      <title>Görüş Protokolları — GDRTI</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 30px; color: #000; font-size: 12pt; }
+        h1 { color: #1e1b4b; border-bottom: 2px solid #4f46e5; padding-bottom: 8px; font-size: 16pt; }
+        .note { border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-bottom: 16px; break-inside: avoid; }
+        .note-title { font-weight: bold; font-size: 13pt; color: #1e1b4b; margin-bottom: 8px; }
+        .note-meta { font-size: 10pt; color: #666; margin-bottom: 8px; }
+        .note-body { font-size: 11pt; line-height: 1.6; }
+        .header { display: flex; justify-content: space-between; margin-bottom: 20px; }
+        .org { font-size: 10pt; color: #666; }
+        @media print { body { padding: 15px; } }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <div>
+          <h1>🏛 Görüş Protokolları</h1>
+          <div class="org">Gəncə-Daşkəsən Regional Təhsil İdarəsi</div>
+        </div>
+        <div class="org">Tarix: ${new Date().toLocaleDateString('az-AZ')}</div>
+      </div>
+      ${Array.from(notes).map(n => `
+        <div class="note">
+          <div class="note-title">${n.querySelector('h2,h3,.mn-title,.note-title,[class*="title"]')?.innerText || 'Protokol'}</div>
+          <div class="note-meta">${n.querySelector('.mn-meta,.note-meta,.meta,[class*="date"],[class*="meta"]')?.innerText || ''}</div>
+          <div class="note-body">${n.querySelector('p,.mn-body,.note-body,.body,[class*="body"],[class*="content"]')?.innerText || n.innerText}</div>
+        </div>`).join('')}
+      <div style="margin-top:30px;text-align:center;font-size:9pt;color:#999;border-top:1px solid #eee;padding-top:10px;">
+        © 2026 GDRTI — Gəncə-Daşkəsən Regional Təhsil İdarəsi
+      </div>
+    </body>
+    </html>
+  `);
+  w.document.close();
+  setTimeout(() => { w.print(); }, 600);
+}
+</script>
 </body>
 </html>
