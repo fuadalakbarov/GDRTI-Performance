@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Çıxış...</title></head>
+<body>
+<script>
+localStorage.clear();
+sessionStorage.clear();
+document.cookie.split(";").forEach(c => {
+  document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=Thu, 01 Jan 1970 00:00:00 GMT");
+});
+location.href = '/index.html';
+</script>
+<p>Çıxış edilir...</p>
+</body>
+</html>
