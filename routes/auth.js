@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const SECRET = process.env.JWT_SECRET || 'gdrti-secret-2026';
 const supabase = require('../db/supabase');
 require('dotenv').config();
 
@@ -24,7 +25,7 @@ router.post('/login', async (req, res) => {
 
   const token = jwt.sign(
     { id: employee.id, role: employee.role, sector_id: employee.sector_id, full_name: employee.full_name },
-    process.env.JWT_SECRET,
+    SECRET,
     { expiresIn: '30d' }
   );
 
@@ -100,7 +101,7 @@ router.post('/google', async (req, res) => {
 
   const token = jwt.sign(
     { id: employee.id, role: employee.role, sector_id: employee.sector_id, full_name: employee.full_name },
-    process.env.JWT_SECRET,
+    SECRET,
     { expiresIn: '30d' }
   );
 
@@ -160,7 +161,7 @@ router.post('/supabase-session', async (req, res) => {
 
   const token = jwt.sign(
     { id: emp.id, role: emp.role, sector_id: emp.sector_id, full_name: emp.full_name },
-    process.env.JWT_SECRET,
+    SECRET,
     { expiresIn: '30d' }
   );
 
