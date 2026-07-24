@@ -31,6 +31,7 @@ function buildSidebar() {
 
   const adminLinks = [
     { href:'admin.html',         icon:SVG.sectors,      label:'Sektorlar' },
+    { href:'correspondence.html', icon:SVG.letters||SVG.resources, label:'Sənəd Dövriyyəsi' },
     { href:'kanban.html',        icon:SVG.kanban,       label:'Kanban' },
     { href:'analytics.html',     icon:SVG.analytics,    label:'Analitika' },
     { href:'workspace.html',     icon:SVG.workspace,    label:'Workspace' },
@@ -43,6 +44,7 @@ function buildSidebar() {
   ];
   const empLinks = [
     { href:'my-dashboard.html',  icon:SVG.dashboard,    label:'Mənim Panelim' },
+    { href:'correspondence.html', icon:SVG.letters||SVG.resources, label:'Sənəd Dövriyyəsi' },
     { href:'kanban.html',        icon:SVG.kanban,       label:'Kanban' },
     { href:'analytics.html',     icon:SVG.analytics,    label:'Analitika' },
     { href:'workspace.html',     icon:SVG.workspace,    label:'Workspace' },

@@ -29,6 +29,7 @@ app.use('/api/settings', require('./routes/settings'));
 app.use('/api/evaluations', require('./routes/evaluations'));
 app.use('/api/wb', require('./routes/whiteboard'));
 app.use('/api/feed', require('./routes/feed'));
+app.use('/api/correspondence', require('./routes/correspondence'));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 

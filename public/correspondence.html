@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Sənəd Dövriyyəsi — GDRTI</title>
+<link rel="stylesheet" href="/css/style.css">
+<style>
+.co-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+.co-fbtn{background:#fff;border:1.5px solid var(--border);border-radius:20px;padding:6px 14px;font-size:.82rem;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text-dim);transition:.15s;}
+.co-fbtn:hover{background:#f5f6ff;}
+.co-fbtn.active{background:var(--grad);color:#fff;border-color:transparent;}
+.co-card{background:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 2px 12px rgba(0,0,0,.07);margin-bottom:12px;border-left:4px solid var(--indigo);}
+.co-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
+.co-subj{font-weight:800;font-size:.95rem;color:var(--text);flex:1;min-width:200px;}
+.co-badge{font-size:.7rem;font-weight:800;padding:3px 10px;border-radius:20px;white-space:nowrap;text-transform:uppercase;letter-spacing:.03em;}
+.b-yeni{background:#e0e7ff;color:#4338ca;}
+.b-derkenar{background:#fef3c7;color:#b45309;}
+.b-sektorda{background:#dbeafe;color:#1d4ed8;}
+.b-iscide{background:#fce7f3;color:#be185d;}
+.b-cavab{background:#d1fae5;color:#047857;}
+.b-tamamlandi{background:#e5e7eb;color:#374151;}
+.co-meta{font-size:.75rem;color:var(--text-mute);display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;}
+.co-body{font-size:.86rem;color:var(--text-dim);line-height:1.55;white-space:pre-wrap;margin-bottom:10px;}
+.co-block{background:#f8f8fd;border-radius:10px;padding:10px 13px;margin-bottom:8px;font-size:.84rem;}
+.co-block b{color:var(--indigo);display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;}
+.co-acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid #f0f0f8;}
+.co-btn{border:none;border-radius:9px;padding:7px 14px;font-size:.8rem;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;}
+.co-b1{background:var(--grad);color:#fff;}
+.co-b2{background:#f0eefa;color:var(--indigo);}
+.co-b3{background:#d1fae5;color:#047857;}
+.co-bd{background:#fee2e2;color:#dc2626;}
+.co-btn:hover{opacity:.85;}
+.co-empty{text-align:center;padding:48px 20px;color:var(--text-mute);}
+.co-empty .i{font-size:3rem;display:block;margin-bottom:10px;}
+.mdl{position:fixed;inset:0;background:rgba(10,5,30,.7);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;}
+.mdl-in{background:#fff;border-radius:16px;padding:24px;width:100%;max-width:480px;max-height:88vh;overflow-y:auto;}
+.mdl-in h3{font-size:1.05rem;font-weight:800;color:var(--indigo);margin-bottom:16px;}
+.fld{margin-bottom:12px;}
+.fld label{display:block;font-size:.74rem;font-weight:700;color:#5c6080;margin-bottom:5px;text-transform:uppercase;letter-spacing:.03em;}
+.fld input,.fld textarea,.fld select{width:100%;background:#f8f8fd;border:1.5px solid #e8eaf6;border-radius:10px;padding:10px 13px;font-size:.88rem;outline:none;font-family:inherit;box-sizing:border-box;}
+.fld textarea{resize:vertical;min-height:80px;}
+.fld input:focus,.fld textarea:focus,.fld select:focus{border-color:var(--indigo);}
+.mdl-acts{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar"></div>
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <h1>📨 Sənəd Dövriyyəsi</h1>
+        <p style="font-size:.85rem;color:var(--text-mute);margin-top:2px;">MÜTDA və digər qurumlardan gələn məktublar</p>
+      </div>
+      <div id="topActions"></div>
+    </div>
+
+    <div class="co-filters" id="filters"></div>
+    <div id="list"></div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/sidebar.js"></script>
+<script>
+requireAuth();
+const user = getUser();
+const MGR = ['admin','director','deputy'];
+const isMgr = MGR.includes(user.role);
+const isHead = user.role === 'sector_head';
+
+const ST = {
+  yeni:'Yeni', derkenar:'Dərkənar', sektorda:'Sektorda',
+  iscide:'İşçidə', cavab:'Cavab hazır', tamamlandi:'Tamamlandı'
+};
+
+let items = [], sectors = [], contacts = [], filter = 'hamisi';
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function dt(s){ return s ? new Date(s).toLocaleDateString('az-AZ') : ''; }
+
+async function init(){
+  if (isMgr) {
+    document.getElementById('topActions').innerHTML =
+      '<button class="btn" onclick="newLetter()">+ Yeni məktub</button>';
+  }
+  const f = document.getElementById('filters');
+  const keys = ['hamisi', ...Object.keys(ST)];
+  f.innerHTML = keys.map(k =>
+    '<button class="co-fbtn' + (k===filter?' active':'') + '" onclick="setFilter(\'' + k + '\')">' +
+    (k==='hamisi'?'Hamısı':ST[k]) + '</button>').join('');
+
+  try { sectors = await apiCall('/sectors'); } catch(e){}
+  try { contacts = await apiCall('/employees/contacts'); } catch(e){}
+  await load();
+}
+
+function setFilter(k){
+  filter = k;
+  document.querySelectorAll('.co-fbtn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  render();
+}
+
+async function load(){
+  try { items = await apiCall('/correspondence'); render(); }
+  catch(e){ document.getElementById('list').innerHTML = '<div class="co-empty">' + e.message + '</div>'; }
+}
+
+function render(){
+  const list = document.getElementById('list');
+  const arr = filter === 'hamisi' ? items : items.filter(i => i.status === filter);
+  if (!arr.length) {
+    list.innerHTML = '<div class="co-empty"><span class="i">📭</span>Məktub yoxdur</div>';
+    return;
+  }
+  list.innerHTML = arr.map(c => {
+    const acts = [];
+    if (isMgr && c.status === 'yeni')
+      acts.push('<button class="co-btn co-b1" onclick="mResolution(\'' + c.id + '\')">✍️ Dərkənar qoy</button>');
+    if ((isMgr || c.coordinator_id === user.id) && ['derkenar','yeni'].includes(c.status))
+      acts.push('<button class="co-btn co-b2" onclick="mRoute(\'' + c.id + '\')">📤 Sektora yönləndir</button>');
+    if ((isMgr || isHead) && ['sektorda','derkenar'].includes(c.status))
+      acts.push('<button class="co-btn co-b2" onclick="mAssign(\'' + c.id + '\')">👤 İşçiyə ver</button>');
+    if (c.assigned_employee_id === user.id && c.status === 'iscide')
+      acts.push('<button class="co-btn co-b3" onclick="mReply(\'' + c.id + '\')">✅ Cavab yaz</button>');
+    if (isMgr && c.status === 'cavab')
+      acts.push('<button class="co-btn co-b3" onclick="doComplete(\'' + c.id + '\')">✔️ Təsdiqlə</button>');
+    if (isMgr)
+      acts.push('<button class="co-btn co-bd" onclick="doDelete(\'' + c.id + '\')">Sil</button>');
+
+    let blocks = '';
+    if (c.resolution) blocks += '<div class="co-block"><b>Dərkənar' + (c.resolver ? ' — ' + esc(c.resolver.full_name) : '') + '</b>' + esc(c.resolution) + '</div>';
+    if (c.reply_body) blocks += '<div class="co-block" style="background:#f0fdf4;"><b>Cavab' + (c.replier ? ' — ' + esc(c.replier.full_name) : '') + '</b>' + esc(c.reply_body) + '</div>';
+
+    const meta = [];
+    if (c.source) meta.push('📍 ' + esc(c.source));
+    if (c.reg_number) meta.push('№ ' + esc(c.reg_number));
+    meta.push('📅 ' + dt(c.received_at));
+    if (c.due_date) meta.push('⏰ Son: ' + dt(c.due_date));
+    if (c.sector) meta.push('🗂 ' + esc(c.sector.name));
+    if (c.employee) meta.push('👤 ' + esc(c.employee.full_name));
+
+    return '<div class="co-card" style="border-left-color:' + (c.sector && c.sector.color ? c.sector.color : '#4f46e5') + '">' +
+      '<div class="co-top"><div class="co-subj">' + esc(c.subject) + '</div>' +
+      '<span class="co-badge b-' + c.status + '">' + (ST[c.status]||c.status) + '</span></div>' +
+      '<div class="co-meta">' + meta.join('') .replace(/📍|№|📅|⏰|🗂|👤/g, m=>'<span style="margin-right:10px;">'+m) + '</div>' +
+      (c.body ? '<div class="co-body">' + esc(c.body) + '</div>' : '') +
+      blocks +
+      (acts.length ? '<div class="co-acts">' + acts.join('') + '</div>' : '') +
+      '</div>';
+  }).join('');
+}
+
+// ─── MODAL KÖMƏKÇİ ────────────────────────────────────────
+function modal(title, inner, onOk, okLabel){
+  const old = document.getElementById('coModal'); if (old) old.remove();
+  const d = document.createElement('div');
+  d.id = 'coModal'; d.className = 'mdl';
+  d.innerHTML = '<div class="mdl-in"><h3>' + title + '</h3>' + inner +
+    '<div id="mErr" style="color:#dc2626;font-size:.8rem;min-height:16px;"></div>' +
+    '<div class="mdl-acts">' +
+    '<button class="co-btn co-b2" id="mCancel">Ləğv et</button>' +
+    '<button class="co-btn co-b1" id="mOk">' + (okLabel||'Təsdiqlə') + '</button>' +
+    '</div></div>';
+  document.body.appendChild(d);
+  d.querySelector('#mCancel').onclick = () => d.remove();
+  d.onclick = e => { if (e.target === d) d.remove(); };
+  d.querySelector('#mOk').onclick = async () => {
+    try { await onOk(); d.remove(); await load(); }
+    catch(e){ d.querySelector('#mErr').textContent = e.message; }
+  };
+}
+
+const secOpts = () => sectors.map(s => '<option value="' + s.id + '">' + esc(s.name) + '</option>').join('');
+const empOpts = (secId) => contacts
+  .filter(c => !secId || c.sector_id === secId)
+  .map(c => '<option value="' + c.id + '">' + esc(c.full_name) + (c.position ? ' — ' + esc(c.position) : '') + '</option>').join('');
+
+// ─── 1) YENİ MƏKTUB ───────────────────────────────────────
+function newLetter(){
+  modal('📨 Yeni məktub',
+    '<div class="fld"><label>Mənbə</label><input id="fSource" value="MÜTDA" placeholder="MÜTDA / Nazirlik / ..."></div>' +
+    '<div class="fld"><label>Qeydiyyat №</label><input id="fReg" placeholder="məs. 12-345"></div>' +
+    '<div class="fld"><label>Göndərən email</label><input id="fEmail" placeholder="ad@edu.gov.az"></div>' +
+    '<div class="fld"><label>Mövzu *</label><input id="fSubj" placeholder="Məktubun mövzusu"></div>' +
+    '<div class="fld"><label>Mətn</label><textarea id="fBody" rows="4"></textarea></div>',
+    async () => {
+      const subject = document.getElementById('fSubj').value.trim();
+      if (!subject) throw new Error('Mövzu tələb olunur');
+      await apiCall('/correspondence','POST',{
+        source: document.getElementById('fSource').value.trim(),
+        reg_number: document.getElementById('fReg').value.trim(),
+        sender_email: document.getElementById('fEmail').value.trim(),
+        subject,
+        body: document.getElementById('fBody').value.trim()
+      });
+    }, 'Əlavə et');
+}
+
+// ─── 2) DƏRKƏNAR ──────────────────────────────────────────
+function mResolution(id){
+  modal('✍️ Dərkənar qoy',
+    '<div class="fld"><label>Dərkənar mətni *</label><textarea id="fRes" rows="3" placeholder="məs. Aidiyyəti üzrə icra edilsin"></textarea></div>' +
+    '<div class="fld"><label>Koordinator</label><select id="fCoord"><option value="">— seçilməyib —</option>' + empOpts() + '</select></div>' +
+    '<div class="fld"><label>Son tarix</label><input type="date" id="fDue"></div>',
+    async () => {
+      const resolution = document.getElementById('fRes').value.trim();
+      if (!resolution) throw new Error('Dərkənar mətni boşdur');
+      await apiCall('/correspondence/' + id + '/resolution','PATCH',{
+        resolution,
+        coordinator_id: document.getElementById('fCoord').value || null,
+        due_date: document.getElementById('fDue').value || null
+      });
+    }, 'Dərkənar qoy');
+}
+
+// ─── 3) SEKTORA YÖNLƏNDİR ─────────────────────────────────
+function mRoute(id){
+  modal('📤 Sektora yönləndir',
+    '<div class="fld"><label>Sektor *</label><select id="fSec"><option value="">— seçin —</option>' + secOpts() + '</select></div>',
+    async () => {
+      const sector_id = document.getElementById('fSec').value;
+      if (!sector_id) throw new Error('Sektor seçin');
+      await apiCall('/correspondence/' + id + '/route','PATCH',{ sector_id });
+    }, 'Yönləndir');
+}
+
+// ─── 4) İŞÇİYƏ VER ────────────────────────────────────────
+function mAssign(id){
+  const c = items.find(x => x.id === id);
+  modal('👤 İşçiyə ver (tapşırıq yaranacaq)',
+    '<div class="fld"><label>İşçi *</label><select id="fEmp"><option value="">— seçin —</option>' + empOpts(c && c.sector_id) + '</select></div>' +
+    '<div class="fld"><label>Son tarix</label><input type="date" id="fDue2" value="' + (c && c.due_date ? c.due_date : '') + '"></div>' +
+    '<div class="fld"><label>Əlavə qeyd</label><textarea id="fNote" rows="2"></textarea></div>',
+    async () => {
+      const employee_id = document.getElementById('fEmp').value;
+      if (!employee_id) throw new Error('İşçi seçin');
+      await apiCall('/correspondence/' + id + '/assign','PATCH',{
+        employee_id,
+        due_date: document.getElementById('fDue2').value || null,
+        note: document.getElementById('fNote').value.trim()
+      });
+    }, 'Tapşırıq yarat');
+}
+
+// ─── 5) CAVAB YAZ ─────────────────────────────────────────
+function mReply(id){
+  const c = items.find(x => x.id === id);
+  modal('✅ Cavab yaz',
+    '<div class="fld"><label>Cavab mətni *</label><textarea id="fReply" rows="6" placeholder="İcra barədə məlumat..."></textarea></div>' +
+    '<div class="fld"><label>Email göndər (istəyə görə)</label><input id="fTo" value="' + (c && c.sender_email ? c.sender_email : '') + '" placeholder="ad@edu.gov.az"></div>',
+    async () => {
+      const reply_body = document.getElementById('fReply').value.trim();
+      if (!reply_body) throw new Error('Cavab mətni boşdur');
+      await apiCall('/correspondence/' + id + '/reply','PATCH',{
+        reply_body,
+        send_to: document.getElementById('fTo').value.trim() || null
+      });
+    }, 'Cavab göndər');
+}
+
+async function doComplete(id){
+  if (!confirm('Təsdiqlənsin?')) return;
+  await apiCall('/correspondence/' + id + '/complete','PATCH',{});
+  load();
+}
+async function doDelete(id){
+  if (!confirm('Silinsin?')) return;
+  await apiCall('/correspondence/' + id,'DELETE');
+  load();
+}
+
+init();
+</script>
+<script src="/js/chat-widget.js"></script>
+</body>
+</html>
